@@ -10,18 +10,23 @@ int firstCell=0;
 int lastCell;
 int faceToShow=0;
 
-struct classcomp {
-  bool operator() (const int f1id, const int f2id)
-  {return f1id<f2id;}
-};
+//struct classcomp {
+//  bool operator() (const string f1id, const string f2id)
+//  {
+//	  if(f1id.compare(f2id)>=0)
+//		  return true;
+//	  else
+//		  return false;
+//  }
+//};
 
-void Solid::dewall(axisToSort axis, deque<Vertex>& vertices, map<int,deque<Face>::pointer,classcomp>& activeFaceList, deque<deque<deque<deque<deque<Vertex>::pointer > > > >& grid)
+void Solid::dewall(axisToSort axis, deque<Vertex>& vertices, map<int,deque<Face>::pointer>& activeFaceList, deque<deque<deque<deque<deque<Vertex>::pointer > > > >& grid)
 {
 	int medianIndex = vertices.size() / 2, i = 0;
 	double alphaPlane=0;
-	map<int,deque<Face>::pointer,classcomp> aflalpha;
-	map<int,deque<Face>::pointer,classcomp> afllow;
-	map<int,deque<Face>::pointer,classcomp> aflhigh;
+	map<string,deque<Face>::pointer> aflalpha;
+	map<string,deque<Face>::pointer> afllow;
+	map<string,deque<Face>::pointer> aflhigh;
 	deque<Vertex> verticesLow;
 	deque<Vertex> verticesHigh;
 	deque<Vertex>::iterator vit;
@@ -42,7 +47,7 @@ void Solid::dewall(axisToSort axis, deque<Vertex>& vertices, map<int,deque<Face>
 	{
 		newCell = new Cell();
 		if (newCell->getVertexListSize() <=4) {
-			newCell->addVertex(vertices[medianIndex]);
+			newCell->addVertex(&listOfVertices[vertices[medianIndex].getId()]);
 		}
 		listOfCells.push_back(*newCell);
 		makeCell(listOfCells.back(),grid, alphaPlane);
@@ -60,41 +65,77 @@ void Solid::dewall(axisToSort axis, deque<Vertex>& vertices, map<int,deque<Face>
 //		cout.flush();
 		for(int i=0; i<4;i++)
 		{
-			if((listOfCells.back().getFaces()[i].getVertices()[0]->getXCoord())<alphaPlane
-			&& (listOfCells.back().getFaces()[i].getVertices()[1]->getXCoord())<alphaPlane
-			&& (listOfCells.back().getFaces()[i].getVertices()[2]->getXCoord())<alphaPlane)
+			if((listOfCells.back().getFaces()[i]->getVertices()[0]->getXCoord())<alphaPlane
+			&& (listOfCells.back().getFaces()[i]->getVertices()[1]->getXCoord())<alphaPlane
+			&& (listOfCells.back().getFaces()[i]->getVertices()[2]->getXCoord())<alphaPlane)
 			{
-				afllow.insert(pair<int,deque<Face>::pointer>(listOfCells.back().getFaces()[i].id, &listOfCells.back().getFaces()[i]));
+				afllow.insert(pair<string,deque<Face>::pointer>(listOfCells.back().getFaces()[i]->getId(), listOfCells.back().getFaces()[i]));
 			}
-			else if((listOfCells.back().getFaces()[i].getVertices()[0]->getXCoord())>alphaPlane
-				 && (listOfCells.back().getFaces()[i].getVertices()[1]->getXCoord())>alphaPlane
-				 && (listOfCells.back().getFaces()[i].getVertices()[2]->getXCoord())>alphaPlane)
+			else if((listOfCells.back().getFaces()[i]->getVertices()[0]->getXCoord())>alphaPlane
+				 && (listOfCells.back().getFaces()[i]->getVertices()[1]->getXCoord())>alphaPlane
+				 && (listOfCells.back().getFaces()[i]->getVertices()[2]->getXCoord())>alphaPlane)
 			{
-				aflhigh.insert(pair<int,deque<Face>::pointer>(listOfCells.back().getFaces()[i].id, &listOfCells.back().getFaces()[i]));
+				aflhigh.insert(pair<string,deque<Face>::pointer>(listOfCells.back().getFaces()[i]->getId(), listOfCells.back().getFaces()[i]));
 			}
 			else
-				aflalpha.insert(pair<int,deque<Face>::pointer>(listOfCells.back().getFaces()[i].id, &listOfCells.back().getFaces()[i]));
+				aflalpha.insert(pair<string,deque<Face>::pointer>(listOfCells.back().getFaces()[i]->getId(), listOfCells.back().getFaces()[i]));
 		}
 		cout<<"aflalpha:"<<aflalpha.size()<<endl;
 		cout<<"afllow:"<<afllow.size()<<endl;
 		cout<<"aflhigh"<<aflhigh.size()<<endl;
 		cout.flush();
 	}
-	while(aflalpha.size())
+	if(aflalpha.size())
 	{
-		map<int,deque<Face>::pointer,classcomp>::iterator aflit;
+		for(map<string,deque<Face>::pointer>::iterator it=aflalpha.begin(); it!=aflalpha.end(); it++)
+			cout<<"aflalpha contents:"<<(*it).first<<","<<(*it).second<<endl;
+		cout.flush();
+		map<string,deque<Face>::pointer>::iterator aflit;
 		multimap<deque<Cell>::pointer, deque<Face>::pointer>::iterator niter;
+		deque<deque<Face>::pointer>::iterator faceiter;
 		for(aflit=aflalpha.begin(); aflit!=aflalpha.end(); )
 		{
 			newCell = new Cell();
 			listOfCells.push_back(*newCell);
-			listOfCells.back().addFEVs(*(*aflit).second);
-			makeCell(listOfCells.back(),grid,alphaPlane);
-			for(niter=listOfCells.back().getNeighbours().begin(); niter!=listOfCells.back().getNeighbours().end(); niter++)
+			cout<<"current afl entry:"<<(*aflit).first<<","<<(*aflit).second<<endl;
+			if((*aflit).first=="19,32,33")
+				cout<<"stop here:"<<aflalpha.size();
+			listOfCells.back().addFEVs((*aflit).second);
+			if(makeCell(listOfCells.back(),grid,alphaPlane))
 			{
-				aflalpha.erase((*((*niter).first->getNeighbours().find(&listOfCells.back()))).second->id);
+				for(faceiter=listOfCells.back().getFaces().begin(); faceiter!=listOfCells.back().getFaces().end(); faceiter++)
+				{
+					cout<<"current face id of cell"<<(*faceiter)->getId()<<endl;
+					if(aflalpha.find((*faceiter)->getId())!=aflalpha.end())
+						aflalpha.erase(aflit++);
+					else if(((*faceiter)->getVertices()[0]->getXCoord())<alphaPlane
+							&& ((*faceiter)->getVertices()[1]->getXCoord())<alphaPlane
+							&& ((*faceiter)->getVertices()[2]->getXCoord())<alphaPlane)
+					{
+						afllow.insert(pair<string,deque<Face>::pointer>((*faceiter)->getId(), *faceiter));
+					}
+					else if(((*faceiter)->getVertices()[0]->getXCoord())>alphaPlane
+							&& ((*faceiter)->getVertices()[1]->getXCoord())>alphaPlane
+							&& ((*faceiter)->getVertices()[2]->getXCoord())>alphaPlane)
+					{
+						aflhigh.insert(pair<string,deque<Face>::pointer>((*faceiter)->getId(),*faceiter));
+					}
+					else
+						aflalpha.insert(pair<string,deque<Face>::pointer>((*faceiter)->getId(),*faceiter));
+				}
 			}
+			else
+			{
+				listOfCells.back().delFEVs((*aflit).second);
+				listOfCells.pop_back();
+				aflalpha.erase(aflit++);
+			}
+
 		}
+		cout<<"alpha size:"<<aflalpha.size();
+		cout<<"Number of cells"<<listOfCells.size()<<endl;
+		cout<<"Number of faces"<<listOfFaces.size()<<endl;
+		map<string,deque<Face>::pointer>::iterator fmapit;
 //		for(unsigned int i=0; i<listOfCells.size(); i++)
 //		{
 //			if(listOfCells[i].getVertexListSize()==3)
@@ -103,7 +144,7 @@ void Solid::dewall(axisToSort axis, deque<Vertex>& vertices, map<int,deque<Face>
 	}
 }
 
-void Solid::makeCell(deque<Cell>::reference cell, deque<deque<deque<deque<deque<Vertex>::pointer > > > >& grid, double alphaPlane)
+bool Solid::makeCell(deque<Cell>::reference cell, deque<deque<deque<deque<deque<Vertex>::pointer > > > >& grid, double alphaPlane)
 {
 	Vertex* winnerVertex;
 	int *centerCoords;
@@ -116,7 +157,7 @@ void Solid::makeCell(deque<Cell>::reference cell, deque<deque<deque<deque<deque<
 		double minSqDist=-1;
 		double tempSqDist=0;
 		stepSize = 1;
-		centerCoords=(int*)cell.getVertices()[0].sparePtr;
+		centerCoords=(int*)cell.getVertices()[0]->sparePtr;
 		//cout<<endl<<centerCoords[0]<<","<<centerCoords[1]<<","<<centerCoords[2]<<endl;
 		//cout.flush();
 		while(winnerVertex==NULL)
@@ -138,12 +179,12 @@ void Solid::makeCell(deque<Cell>::reference cell, deque<deque<deque<deque<deque<
 									continue;
 								if(minSqDist<0)
 								{
-									minSqDist=cell.getVertices()[0].getSqDistance(*grid[i][j][k][indexer]);
+									minSqDist=cell.getVertices()[0]->getSqDistance(*grid[i][j][k][indexer]);
 									winnerVertex=grid[i][j][k][indexer];
 								}
 								else
 								{
-									tempSqDist = cell.getVertices()[0].getSqDistance(*grid[i][j][k][indexer]);
+									tempSqDist = cell.getVertices()[0]->getSqDistance(*grid[i][j][k][indexer]);
 									if(tempSqDist<minSqDist)
 									{
 										minSqDist=tempSqDist;
@@ -158,10 +199,12 @@ void Solid::makeCell(deque<Cell>::reference cell, deque<deque<deque<deque<deque<
 			stepSize++;
 		}
 		cout<<"winner vertex :"<<winnerVertex->getXCoord()<<endl;
-		cell.addVertex(*winnerVertex);
+		cell.addVertex(winnerVertex);
 		newEdge = new Edge();
-		cell.addEdge(*newEdge);
-		cell.getEdges()[0].setVertices(&cell.getVertices()[0],&cell.getVertices()[1]);
+		listOfEdges.push_back(*newEdge);
+		listOfEdges.back().setVertices(cell.getVertices()[0],cell.getVertices()[1]);
+		cell.addEdge(&listOfEdges.back());
+		//cell.getEdges()[0].setVertices(&cell.getVertices()[0],&cell.getVertices()[1]);
 		//cout<<"Vertex1:"<<cell.getVertices()[0].getXCoord()<<","<<cell.getVertices()[0].getYCoord()<<","<<cell.getVertices()[0].getZCoord()<<endl;
 		//cout<<"Vertex2:"<<cell.getVertices()[1].getXCoord()<<","<<cell.getVertices()[1].getYCoord()<<","<<cell.getVertices()[1].getZCoord()<<endl;
 
@@ -187,8 +230,8 @@ void Solid::makeCell(deque<Cell>::reference cell, deque<deque<deque<deque<deque<
 
 		//cout<<"Vertex1:"<<cell.getVertices()[0].getXCoord()<<","<<cell.getVertices()[0].getYCoord()<<","<<cell.getVertices()[0].getZCoord()<<endl;
 		//cout<<"Vertex2:"<<cell.getVertices()[1].getXCoord()<<","<<cell.getVertices()[1].getYCoord()<<","<<cell.getVertices()[1].getZCoord()<<endl;
-		gridCoord1=(unsigned int*)cell.getVertices()[0].sparePtr;
-		gridCoord2=(unsigned int*)cell.getVertices()[1].sparePtr;
+		gridCoord1=(unsigned int*)cell.getVertices()[0]->sparePtr;
+		gridCoord2=(unsigned int*)cell.getVertices()[1]->sparePtr;
 
 		bboxMin[0]= (gridCoord1[0]<gridCoord2[0])?gridCoord1[0]:gridCoord2[0];
 		bboxMax[0]= (gridCoord1[0]>gridCoord2[0])?gridCoord1[0]:gridCoord2[0];
@@ -204,7 +247,7 @@ void Solid::makeCell(deque<Cell>::reference cell, deque<deque<deque<deque<deque<
 
 		if(!twoVertices)
 		{
-			gridCoord3=(unsigned int*)cell.getVertices()[2].sparePtr;
+			gridCoord3=(unsigned int*)cell.getVertices()[2]->sparePtr;
 			bboxMin[0]= (bboxMin[0]<gridCoord3[0])?bboxMin[0]:gridCoord3[0];
 			bboxMax[0]= (bboxMax[0]>gridCoord3[0])?bboxMax[0]:gridCoord3[0];
 			bboxMin[1]= (bboxMin[1]<gridCoord3[1])?bboxMin[1]:gridCoord3[1];
@@ -265,59 +308,144 @@ void Solid::makeCell(deque<Cell>::reference cell, deque<deque<deque<deque<deque<
 		if(winnerVertex)
 		{
 			confirmWinnerVertex(cell,winnerVertex,centerRadius,grid);
-			cell.addVertex(*winnerVertex);
+			cell.addVertex(winnerVertex);
 		}
+		else
+			return false;
 
 		if(twoVertices && winnerVertex)
 		{
 			newEdge1 = new Edge();
 			newEdge2 = new Edge();
-			cell.addEdge(*newEdge1);
-			cell.addEdge(*newEdge2);
-			cell.getEdges()[1].setVertices(&cell.getVertices()[1],&cell.getVertices()[2]);
-			cell.getEdges()[2].setVertices(&cell.getVertices()[0],&cell.getVertices()[2]);
+			string facid;
+			stringstream tempStream1;
+			int idarray[3];
+			listOfEdges.push_back(*newEdge1);
+			listOfEdges.back().setVertices(cell.getVertices()[1],cell.getVertices()[2]);
+			cell.addEdge(&listOfEdges.back());
+			listOfEdges.push_back(*newEdge2);
+			listOfEdges.back().setVertices(cell.getVertices()[0],cell.getVertices()[2]);
+			cell.addEdge(&listOfEdges.back());
+			//cell.getEdges()[1].setVertices(&cell.getVertices()[1],&cell.getVertices()[2]);
+			//cell.getEdges()[2].setVertices(&cell.getVertices()[0],&cell.getVertices()[2]);
 			newFace  = new Face();
-			cell.addFace(*newFace);
-			cell.getFaces()[0].addVertices(&cell.getVertices()[0],&cell.getVertices()[1],&cell.getVertices()[2]);
-			cell.getFaces()[0].addEdges(&cell.getEdges()[0],&cell.getEdges()[1],&cell.getEdges()[2]);
-			cell.getFaces()[0].incrNumOfOpenFaces(grid);
+			listOfFaces.push_back(*newFace);
+			listOfFaces.back().addVertices(cell.getVertices()[0],cell.getVertices()[1],cell.getVertices()[2]);
+			//TODO
+			idarray[0]=cell.getVertices()[0]->getId();
+			idarray[1]=cell.getVertices()[1]->getId();
+			idarray[2]=cell.getVertices()[2]->getId();
+			sort3ints(idarray);
+			tempStream1<<idarray[0]<<','<<idarray[1]<<','<<idarray[2];
+			facid=tempStream1.str();
+			listOfFaces.back().setId(facid);
+			faceMap.insert(pair<string,deque<Face>::pointer>(facid,&listOfFaces.back()));
+			listOfFaces.back().addEdges(cell.getEdges()[0],cell.getEdges()[1],cell.getEdges()[2]);
+			cell.addFace(&listOfFaces.back());
+			//cell.getFaces()[0].addVertices(&cell.getVertices()[0],&cell.getVertices()[1],&cell.getVertices()[2]);
+			//cell.getFaces()[0].addEdges(&cell.getEdges()[0],&cell.getEdges()[1],&cell.getEdges()[2]);
+			cell.getFaces()[0]->incrNumOfOpenFaces(grid);
 		}
 		if(!twoVertices && winnerVertex)
 		{
 			newEdge1 = new Edge();
 			newEdge2 = new Edge();
 			newEdge3 = new Edge();
-			Face* newFace1 = new Face();
-			Face* newFace2 = new Face();
-			Face* newFace3 = new Face();
-			cell.addEdge(*newEdge1);
-			cell.addEdge(*newEdge2);
-			cell.addEdge(*newEdge3);
-			cell.getEdges()[3].setVertices(&cell.getVertices()[0],&cell.getVertices()[3]);
-			cell.getEdges()[4].setVertices(&cell.getVertices()[1],&cell.getVertices()[3]);
-			cell.getEdges()[5].setVertices(&cell.getVertices()[2],&cell.getVertices()[3]);
-			cell.addFace(*newFace1);
-			cell.addFace(*newFace2);
-			cell.addFace(*newFace3);
-			cell.getFaces()[1].addVertices(&cell.getVertices()[0],&cell.getVertices()[1],&cell.getVertices()[3]);
-			cell.getFaces()[2].addVertices(&cell.getVertices()[1],&cell.getVertices()[2],&cell.getVertices()[3]);
-			cell.getFaces()[3].addVertices(&cell.getVertices()[2],&cell.getVertices()[0],&cell.getVertices()[3]);
+			map<string,deque<Face>::pointer>::iterator fmapit;
+			int idarray[3];
+			string facid;
+			stringstream tempStream1, tempStream2, tempStream3;
+			listOfEdges.push_back(*newEdge1);
+			listOfEdges.back().setVertices(cell.getVertices()[0],cell.getVertices()[3]);
+			cell.addEdge(&listOfEdges.back());
+			listOfEdges.push_back(*newEdge2);
+			listOfEdges.back().setVertices(cell.getVertices()[1],cell.getVertices()[3]);
+			cell.addEdge(&listOfEdges.back());
+			listOfEdges.push_back(*newEdge3);
+			listOfEdges.back().setVertices(cell.getVertices()[2],cell.getVertices()[3]);
+			cell.addEdge(&listOfEdges.back());
+//			cell.getEdges()[3].setVertices(&cell.getVertices()[0],&cell.getVertices()[3]);
+//			cell.getEdges()[4].setVertices(&cell.getVertices()[1],&cell.getVertices()[3]);
+//			cell.getEdges()[5].setVertices(&cell.getVertices()[2],&cell.getVertices()[3]);
+			idarray[0]=cell.getVertices()[0]->getId();
+			idarray[1]=cell.getVertices()[1]->getId();
+			idarray[2]=cell.getVertices()[3]->getId();
+			sort3ints(idarray);
+			tempStream1<<idarray[0]<<','<<idarray[1]<<','<<idarray[2];
+			facid=tempStream1.str();
+			fmapit=faceMap.find(facid);
+			if(fmapit==faceMap.end())
+			{
+				Face* newFace1 = new Face();
+				listOfFaces.push_back(*newFace1);
+				listOfFaces.back().addVertices(cell.getVertices()[0],cell.getVertices()[1],cell.getVertices()[3]);
+				listOfFaces.back().setId(facid);
+				faceMap.insert(pair<string,deque<Face>::pointer>(facid,&listOfFaces.back()));
+				cell.addFace(&listOfFaces.back());
+			}
+			else
+			{
+				cell.addFace((*fmapit).second);
+			}
+			//tempStream<<cell.getVertices()[1]->getId()<<','<<cell.getVertices()[2]->getId()<<','<<cell.getVertices()[3]->getId();
+			idarray[0]=cell.getVertices()[1]->getId();
+			idarray[1]=cell.getVertices()[2]->getId();
+			idarray[2]=cell.getVertices()[3]->getId();
+			sort3ints(idarray);
+			tempStream2<<idarray[0]<<','<<idarray[1]<<','<<idarray[2];
+			facid=tempStream2.str();
+			fmapit=faceMap.find(facid);
+			if(fmapit==faceMap.end())
+			{
+				Face* newFace2 = new Face();
+				listOfFaces.push_back(*newFace2);
+				listOfFaces.back().addVertices(cell.getVertices()[1],cell.getVertices()[2],cell.getVertices()[3]);
+				listOfFaces.back().setId(facid);
+				faceMap.insert(pair<string,deque<Face>::pointer>(facid,&listOfFaces.back()));
+				cell.addFace(&listOfFaces.back());
+			}
+			else
+			{
+				cell.addFace((*fmapit).second);
+			}
+			//tempStream<<cell.getVertices()[2]->getId()<<','<<cell.getVertices()[0]->getId()<<','<<cell.getVertices()[3]->getId();
+			idarray[0]=cell.getVertices()[2]->getId();
+			idarray[1]=cell.getVertices()[0]->getId();
+			idarray[2]=cell.getVertices()[3]->getId();
+			sort3ints(idarray);
+			tempStream3<<idarray[0]<<','<<idarray[1]<<','<<idarray[2];
+			facid=tempStream3.str();
+			fmapit=faceMap.find(facid);
+			if(fmapit==faceMap.end())
+			{
+				Face* newFace3 = new Face();
+				listOfFaces.push_back(*newFace3);
+				listOfFaces.back().addVertices(cell.getVertices()[2],cell.getVertices()[0],cell.getVertices()[3]);
+				listOfFaces.back().setId(facid);
+				faceMap.insert(pair<string,deque<Face>::pointer>(facid,&listOfFaces.back()));
+				cell.addFace(&listOfFaces.back());
+			}
+			else
+				cell.addFace((*fmapit).second);
+//			cell.getFaces()[1].addVertices(&cell.getVertices()[0],&cell.getVertices()[1],&cell.getVertices()[3]);
+//			cell.getFaces()[2].addVertices(&cell.getVertices()[1],&cell.getVertices()[2],&cell.getVertices()[3]);
+//			cell.getFaces()[3].addVertices(&cell.getVertices()[2],&cell.getVertices()[0],&cell.getVertices()[3]);
 
-			cell.getFaces()[1].addEdges(&cell.getEdges()[0],&cell.getEdges()[4],&cell.getEdges()[3]);
-			cell.getFaces()[2].addEdges(&cell.getEdges()[1],&cell.getEdges()[5],&cell.getEdges()[4]);
-			cell.getFaces()[3].addEdges(&cell.getEdges()[2],&cell.getEdges()[3],&cell.getEdges()[5]);
+			cell.getFaces()[1]->addEdges(cell.getEdges()[0],cell.getEdges()[4],cell.getEdges()[3]);
+			cell.getFaces()[2]->addEdges(cell.getEdges()[1],cell.getEdges()[5],cell.getEdges()[4]);
+			cell.getFaces()[3]->addEdges(cell.getEdges()[2],cell.getEdges()[3],cell.getEdges()[5]);
 
-			cell.getFaces()[1].incrNumOfOpenFaces(grid);
-			cell.getFaces()[2].incrNumOfOpenFaces(grid);
-			cell.getFaces()[3].incrNumOfOpenFaces(grid);
+			cell.getFaces()[1]->incrNumOfOpenFaces(grid);
+			cell.getFaces()[2]->incrNumOfOpenFaces(grid);
+			cell.getFaces()[3]->incrNumOfOpenFaces(grid);
 
-			cell.getFaces()[0].addOppositeVertex(&cell.getVertices()[3]);
-			cell.getFaces()[1].addOppositeVertex(&cell.getVertices()[2]);
-			cell.getFaces()[2].addOppositeVertex(&cell.getVertices()[0]);
-			cell.getFaces()[3].addOppositeVertex(&cell.getVertices()[1]);
+			cell.getFaces()[0]->addOppositeVertex(cell.getVertices()[3]);
+			cell.getFaces()[1]->addOppositeVertex(cell.getVertices()[2]);
+			cell.getFaces()[2]->addOppositeVertex(cell.getVertices()[0]);
+			cell.getFaces()[3]->addOppositeVertex(cell.getVertices()[1]);
 		}
 	}
-
+	return true;
 }
 
 void Solid::confirmWinnerVertex(deque<Cell>::reference cell,Vertex*& winnerVertex, double centerRadius[4],deque<deque<deque<deque<deque<Vertex>::pointer > > > >& grid)
@@ -329,10 +457,10 @@ void Solid::confirmWinnerVertex(deque<Cell>::reference cell,Vertex*& winnerVerte
 	int centerGrid[3];
 	int *vertexGridCoords;
 	vertexGridCoords = (int*)malloc(sizeof(int)*4);
-	vertexGridCoords = (int*)cell.getVertices()[0].sparePtr;
-	centerGrid[0]=vertexGridCoords[0]+(floor(centerRadius[0])-floor(cell.getVertices()[0].getXCoord()));
-	centerGrid[1]=vertexGridCoords[1]+(floor(centerRadius[1])-floor(cell.getVertices()[0].getYCoord()));
-	centerGrid[2]=vertexGridCoords[2]+(floor(centerRadius[2])-floor(cell.getVertices()[0].getZCoord()));
+	vertexGridCoords = (int*)cell.getVertices()[0]->sparePtr;
+	centerGrid[0]=vertexGridCoords[0]+(floor(centerRadius[0])-floor(cell.getVertices()[0]->getXCoord()));
+	centerGrid[1]=vertexGridCoords[1]+(floor(centerRadius[1])-floor(cell.getVertices()[0]->getYCoord()));
+	centerGrid[2]=vertexGridCoords[2]+(floor(centerRadius[2])-floor(cell.getVertices()[0]->getZCoord()));
 
 	for(unsigned int i = centerGrid[0]-stepSize; i<grid.size() && i<=centerGrid[0]+stepSize; i++)
 		for(unsigned int j=centerGrid[1]-stepSize; j<grid[i].size() && j<=centerGrid[1]+stepSize ;j++)

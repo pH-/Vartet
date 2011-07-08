@@ -93,10 +93,10 @@ bool Vertex::sameAs(Vertex& v)
 	return(getXCoord()==v.getXCoord() && getYCoord()==v.getYCoord() && getZCoord()==v.getZCoord());
 }
 
-void Vertex::setOppFace(deque<Face>::pointer face)
-{
-	oppositeFace = face;
-}
+//void Vertex::setOppFace(deque<Face>::pointer face)
+//{
+//	oppositeFace = face;
+//}
 
 void Vertex::incrNumOfOpenFaces()
 {
@@ -104,6 +104,16 @@ void Vertex::incrNumOfOpenFaces()
 		numOfOpenFaces=1;
 	else
 		numOfOpenFaces++;
+}
+
+void Vertex::setId(int idNum)
+{
+	id=idNum;
+}
+
+int Vertex::getId()
+{
+	return id;
 }
 ///Plc Hole class
 
@@ -159,11 +169,15 @@ PlcEdge::PlcEdge(Vertex *vertex1, Vertex *vertex2)
 
 ///Face class
 
-Face::Face()
+void Face::setId(string vid)
 {
-	id=counter++;
+	id.assign(vid);
 }
 
+string Face::getId()
+{
+	return id;
+}
 void Face::addVertices(deque<Vertex>::pointer v1, deque<Vertex>::pointer v2, deque<Vertex>::pointer v3)
 {
 	vertices[0]=v1;
@@ -180,8 +194,11 @@ void Face::addEdges(deque<Edge>::pointer e1, deque<Edge>::pointer e2, deque<Edge
 
 void Face::addOppositeVertex(deque<Vertex>::pointer v)
 {
-	oppositeVertex=v;
-	v->setOppFace(this);
+	if(oppositeVertex1)
+		oppositeVertex2=v;
+	else
+		oppositeVertex1=v;
+//	v->setOppFace(this);
 }
 
 void Face::addNormalDir(double normal[3])
@@ -257,9 +274,24 @@ deque<Edge>::pointer* Face::getEdges()
 	return edges;
 }
 
-void Face::setParentCell(deque<Cell>::pointer pCell)
+void Face::setNeighbourCell(deque<Cell>::pointer pCell)
 {
-	parentCell = pCell;
+	if(!cell1)
+		cell1=pCell;
+	else if(!cell2)
+		cell2=pCell;
+	else
+		cout<<"ERROR while setting neighbour"<<endl;
+}
+
+void Face::setNeighCell1(deque<Cell>::pointer cellPtr)
+{
+	cell1=cellPtr;
+}
+
+void Face::setNeighCell2(deque<Cell>::pointer cellPtr)
+{
+	cell2=cellPtr;
 }
 
 void Face::incrNumOfOpenFaces(deque<deque<deque<deque<deque<Vertex>::pointer > > > >& grid)
@@ -269,21 +301,30 @@ void Face::incrNumOfOpenFaces(deque<deque<deque<deque<deque<Vertex>::pointer > >
 	for(int i=0; i<3; i++)
 	{
 		vertices[i]->incrNumOfOpenFaces();
-		gridCoord=(unsigned int*)vertices[i]->sparePtr;
-		grid[gridCoord[0]][gridCoord[1]][gridCoord[2]][gridCoord[3]]->incrNumOfOpenFaces();
+		//gridCoord=(unsigned int*)vertices[i]->sparePtr;
+		//grid[gridCoord[0]][gridCoord[1]][gridCoord[2]][gridCoord[3]]->incrNumOfOpenFaces();
 	}
 }
 
-deque<Cell>::pointer Face::getParentCell()
+deque<Cell>::pointer Face::getNeighCell1()
 {
-	return parentCell;
+	return cell1;
 }
 
-deque<Vertex>::pointer Face::getOppositeVertex()
+deque<Cell>::pointer Face::getNeighCell2()
 {
-	return oppositeVertex;
+	return cell2;
 }
 
+deque<Vertex>::pointer Face::getOppositeVertex1()
+{
+	return oppositeVertex1;
+}
+
+deque<Vertex>::pointer Face::getOppositeVertex2()
+{
+	return oppositeVertex2;
+}
 ///Plc Polygon class
 
 PlcPolygon::PlcPolygon(deque<int>& vertexIndices, deque<Vertex>& vertexList)
@@ -316,26 +357,26 @@ Cell::Cell(int size)
 	edges.resize(size);
 }
 
-void Cell::addVertex(Vertex& vertex)
+void Cell::addVertex(deque<Vertex>::pointer vertex)
 {
 	vertices.push_back(vertex);
 }
 
-void Cell::addEdge(Edge& edge)
+void Cell::addEdge(deque<Edge>::pointer edge)
 {
 	edges.push_back(edge);
 }
 
-void Cell::addFace(Face& face)
+void Cell::addFace(deque<Face>::pointer face)
 {
 	faces.push_back(face);
-	faces.back().setParentCell(this);
+	faces.back()->setNeighbourCell(this);
 }
 
-void Cell::addNeighbour(deque<Cell>::pointer cell, deque<Face>::pointer face)
-{
-	neighbours.insert(pair<deque<Cell>::pointer, deque<Face>::pointer>(cell,face));
-}
+//void Cell::addNeighbour(deque<Cell>::pointer cell, deque<Face>::pointer face)
+//{
+//	neighbours.insert(pair<deque<Cell>::pointer, deque<Face>::pointer>(cell,face));
+//}
 
 size_t Cell::getVertexListSize()
 {
@@ -349,7 +390,14 @@ size_t Cell::getFaceListSize()
 
 size_t Cell::getNeighListSize()
 {
-	return neighbours.size();
+	deque<deque<Face>::pointer>::iterator fit;
+	size_t neighSize=0;
+	for(fit=faces.begin(); fit!=faces.end(); fit++)
+	{
+		if((*fit)->getNeighCell1() && (*fit)->getNeighCell2())
+			neighSize++;
+	}
+	return neighSize;
 }
 
 size_t Cell::getEdgeListSize()
@@ -357,64 +405,77 @@ size_t Cell::getEdgeListSize()
 	return edges.size();
 }
 
-deque<Vertex>& Cell::getVertices()
+deque<deque<Vertex>::pointer>& Cell::getVertices()
 {
 	return vertices;
 }
 
-deque<Edge>& Cell::getEdges()
+deque<deque<Edge>::pointer>& Cell::getEdges()
 {
 	return edges;
 }
 
-deque<Face>& Cell::getFaces()
+deque<deque<Face>::pointer>& Cell::getFaces()
 {
 	return faces;
 }
 
-multimap<deque<Cell>::pointer, deque<Face>::pointer>& Cell::getNeighbours()
-{
-	return neighbours;
-}
+//multimap<deque<Cell>::pointer, deque<Face>::pointer>& Cell::getNeighbours()
+//{
+//	return neighbours;
+//}
 
 bool Cell::testCircumCircle(Vertex& v, double centerRadius[4])
 {
-	return edges[0].testCircumCircle(v,centerRadius);
+	return edges[0]->testCircumCircle(v,centerRadius);
 }
 
 bool Cell::testCircumSphere(Vertex& v, double centerRadius[4])
 {
-	return faces[0].testCircumSphere(v,centerRadius);
+	return faces[0]->testCircumSphere(v,centerRadius);
 }
 
-void Cell::addFEVs(Face& face)
+void Cell::addFEVs(deque<Face>::pointer face)
 {
-	Face *newFace;
 	for(int i=0; i<3; i++)
 	{
-		vertices.push_back(*face.getVertices()[i]);
-		edges.push_back(*face.getEdges()[i]);
+		vertices.push_back(face->getVertices()[i]);
+		edges.push_back(face->getEdges()[i]);
 	}
-	face.getParentCell()->addNeighbour(this,&face);
-	newFace  = new Face();
-	addFace(*newFace);
-	neighbours.insert(pair<deque<Cell>::pointer, deque<Face>::pointer>(face.getParentCell(),&faces.back()));
-	faces.back().addVertices(&vertices[0],&vertices[1],&vertices[2]);
-	faces.back().addEdges(&edges[0],&edges[1],&edges[2]);
+	addFace(face);
 }
 
+void Cell::delFEVs(deque<Face>::pointer face)
+{
+	for(int i=0; i<3; i++)
+	{
+		vertices.clear();
+		edges.clear();
+	}
+	if(face->getNeighCell1()==this)
+		face->setNeighCell1(NULL);
+	else
+		face->setNeighCell2(NULL);
+}
 bool Cell::checkOrientation(Vertex& v2)
 {
 	double matrixp1[3][3];
 	double matrixp2[3][3];
+	Vertex *oppVertex;
 	multimap<deque<Cell>::pointer, deque<Face>::pointer>::iterator niter;
-	niter = neighbours.begin();
+	//niter = neighbours.begin();
 	//cout<<"Opp v: "<<(*((*niter).first->getNeighbours().find(this))).second->getOppositeVertex()->getXCoord()<<endl;
+	if(faces.back()->getNeighCell1()==this)
+		oppVertex=faces.back()->getOppositeVertex2();
+	else if(faces.back()->getNeighCell2()==this)
+		oppVertex=faces.back()->getOppositeVertex1();
+	else
+		cout<<"ERROR ERROR::"<<endl;
 	for(int i=0; i<3; i++)
 		for(int j=0; j<3; j++)
 		{
-			matrixp2[i][j] = (faces.back().getVertices()[i]->getCoord((axisToSort)j)) - ((*((*niter).first->getNeighbours().find(this))).second->getOppositeVertex()->getCoord((axisToSort)j));
-			matrixp1[i][j] = (faces.back().getVertices()[i]->getCoord((axisToSort)j)) - (v2.getCoord((axisToSort)j));
+			matrixp2[i][j] = (faces.back()->getVertices()[i]->getCoord((axisToSort)j)) - (oppVertex->getCoord((axisToSort)j));
+			matrixp1[i][j] = (faces.back()->getVertices()[i]->getCoord((axisToSort)j)) - (v2.getCoord((axisToSort)j));
 		}
 	if(determinant3x3(matrixp1) * determinant3x3(matrixp2)<0)
 		return true;
@@ -428,16 +489,18 @@ void Solid::populateVertices(deque<Vertex>& vertexList)
 	//cout<<listOfVertices.size();
 	//cout.flush();
 	deque<Vertex>::iterator vit;
-	for(vit=vertexList.begin(); vit!=vertexList.end(); vit++)
+	int i=0;
+	for(vit=vertexList.begin(); vit!=vertexList.end(); vit++, ++i)
 	{
 		listOfVertices.push_back(*vit);
+		listOfVertices.back().setId(i);
 	}
 }
 void Solid::delaunize()
 {
 	deque<Vertex> vertices;
 	deque<Vertex>::iterator vit;
-	map<Face,int> afl;
+	map<int,deque<Face>::pointer> afl;
 	deque<deque<deque<deque<deque<Vertex>::pointer > > > > grid;
 	double minx=0.0, miny=0.0, minz=0.0, maxx=0.0, maxy=0.0,maxz=0.0;
 	for(vit=listOfVertices.begin(); vit!=listOfVertices.end(); vit++)
@@ -503,8 +566,8 @@ void Solid::delaunize()
 
 void Solid::drawEdges()
 {
-	deque<Edge>::iterator eit;
-	deque<Face>::iterator fit;
+	deque<deque<Edge>::pointer>::iterator eit;
+	//deque<deque<Face>::pointer>::iterator fit;
 	deque<Vertex>::iterator vit;
 	for(vit=listOfVertices.begin(); vit!=listOfVertices.end(); vit++)
 	{
@@ -520,8 +583,8 @@ void Solid::drawEdges()
 		{
 			glColor4f(1.0,0.0,0.0,1.0);
 			glBegin(GL_LINES);
-			glVertex3d(eit->getVertex()[0]->getXCoord(), eit->getVertex()[0]->getYCoord(), eit->getVertex()[0]->getZCoord());
-			glVertex3d(eit->getVertex()[1]->getXCoord(), eit->getVertex()[1]->getYCoord(), eit->getVertex()[1]->getZCoord());
+			glVertex3d((*eit)->getVertex()[0]->getXCoord(), (*eit)->getVertex()[0]->getYCoord(), (*eit)->getVertex()[0]->getZCoord());
+			glVertex3d((*eit)->getVertex()[1]->getXCoord(), (*eit)->getVertex()[1]->getYCoord(), (*eit)->getVertex()[1]->getZCoord());
 			glEnd();
 		}
 //		for(int j=0; j<3; j++)

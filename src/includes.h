@@ -100,5 +100,29 @@ inline double determinant4x4 (double matrix[4][4])
 		return determinant;
 }
 
+inline void sort3ints(int intarray[3])
+{
+	int tempNum;
+	if(intarray[0]>intarray[1])
+	{
+		tempNum=intarray[1];
+		intarray[1]=intarray[0];
+		intarray[0]=tempNum;
+	}
+	if(intarray[1]>intarray[2])
+	{
+		tempNum=intarray[2];
+		intarray[2]=intarray[1];
+		intarray[1]=tempNum;
+
+		if(intarray[0]>intarray[1])
+		{
+			tempNum=intarray[1];
+			intarray[1]=intarray[0];
+			intarray[0]=tempNum;
+		}
+	}
+	cout<<"Fids:"<<intarray[0]<<","<<intarray[1]<<","<<intarray[2]<<endl;
+}
 
 #endif /* INCLUDES_H_ */

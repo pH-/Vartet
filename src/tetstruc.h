@@ -35,14 +35,17 @@ public:
 	double getCoord(axisToSort);
 	double getSqDistance(Vertex&);
 	bool   sameAs(Vertex&);
-	void   setOppFace(deque<Face>::pointer);
+//	void   setOppFace(deque<Face>::pointer);
 	void   incrNumOfOpenFaces();
+	void   setId(int id);
+	int    getId();
 	void	*sparePtr;						// a pointer to be used for temporary extension of a vertex object.
 private:
 	Coordinates *vertexCoord;
 	bool		boundaryMarker;
 	int			numOfOpenFaces;
 	deque<Face>::pointer oppositeFace;
+	int         id;
 };
 
 class Hole {
@@ -73,7 +76,8 @@ private:
 
 class Face	{
 public:
-	Face();
+	void setId(string);
+	string getId();
 	void addVertices(deque<Vertex>::pointer, deque<Vertex>::pointer, deque<Vertex>::pointer);
 	void addEdges(deque<Edge>::pointer, deque<Edge>::pointer, deque<Edge>::pointer);
 	void addOppositeVertex(deque<Vertex>::pointer);
@@ -81,16 +85,22 @@ public:
 	bool testCircumSphere(Vertex&,double[4]);
 	deque<Vertex>::pointer* getVertices();
 	deque<Edge>::pointer* getEdges();
-	void setParentCell(Cell*);
-	Cell* getParentCell();
+	void setNeighbourCell(deque<Cell>::pointer);
+	void setNeighCell1(deque<Cell>::pointer);
+	void setNeighCell2(deque<Cell>::pointer);
+	Cell* getNeighCell1();
+	Cell* getNeighCell2();
 	void incrNumOfOpenFaces(deque<deque<deque<deque<deque<Vertex>::pointer > > > >&);
-	deque<Vertex>::pointer getOppositeVertex();
-	int 		id;
+	deque<Vertex>::pointer getOppositeVertex1();
+	deque<Vertex>::pointer getOppositeVertex2();
 private:
 	deque<Vertex>::pointer	vertices[3];
 	deque<Edge>::pointer	edges[3];
-	deque<Vertex>::pointer	oppositeVertex;
-	deque<Cell>::pointer    parentCell;
+	deque<Vertex>::pointer	oppositeVertex1;
+	deque<Vertex>::pointer  oppositeVertex2;
+	deque<Cell>::pointer    cell1;
+	deque<Cell>::pointer    cell2;
+	string					id;
 	double      normDir[3];
 };
 
@@ -119,28 +129,29 @@ class Cell	{
 public:
 	Cell();
 	Cell(int);
-	void addVertex(Vertex&);
-	void addFace(Face&);
-	void addNeighbour(deque<Cell>::pointer, deque<Face>::pointer);
-	void addEdge(Edge&);
+	void addVertex(deque<Vertex>::pointer);
+	void addFace(deque<Face>::pointer);
+	//void addNeighbour(deque<Cell>::pointer, deque<Face>::pointer);
+	void addEdge(deque<Edge>::pointer);
 	size_t getVertexListSize();
 	size_t getFaceListSize();
 	size_t getNeighListSize();
 	size_t getEdgeListSize();
-	deque<Vertex>& getVertices();
-	deque<Edge>& getEdges();
-	deque<Face>& getFaces();
-	multimap<deque<Cell>::pointer, deque<Face>::pointer>& getNeighbours();
+	deque<deque<Vertex>::pointer>& getVertices();
+	deque<deque<Edge>::pointer>& getEdges();
+	deque<deque<Face>::pointer>& getFaces();
+	//multimap<deque<Cell>::pointer, deque<Face>::pointer>& getNeighbours();
 	bool testCircumCircle(Vertex&,double[4]);
 	bool testCircumSphere(Vertex&,double[4]);
-	void addFEVs(Face&);
+	void addFEVs(deque<Face>::pointer);
+	void delFEVs(deque<Face>::pointer);
 	bool checkOrientation(Vertex&);
 
 private:
-	deque<Vertex> vertices;
-	deque<Face>	faces;
-	multimap<deque<Cell>::pointer, deque<Face>::pointer> neighbours;
-	deque<Edge>	edges;
+	deque<deque<Vertex>::pointer> vertices;
+	deque<deque<Edge>::pointer>   edges;
+	deque<deque<Face>::pointer>   faces;
+	//multimap<deque<Cell>::pointer, deque<Face>::pointer> neighbours;
 };
 
 class Solid	{
@@ -148,9 +159,9 @@ public:
 	void populateVertices(deque<Vertex>&);
 	void delaunize();
 	//void sortVertices(axisToSort, deque<Vertex>, deque<Vertex>);
-	void dewall(axisToSort,deque<Vertex>&,map<Face,int>&, deque<deque<deque<deque<deque<Vertex>::pointer > > > >&);
+	void dewall(axisToSort,deque<Vertex>&,map<int,deque<Face>::pointer>&, deque<deque<deque<deque<deque<Vertex>::pointer > > > >&);
 	void *sparePtr;                                          // a pointer to be used for temporary extension of a Solid object.
-	void makeCell(deque<Cell>::reference, deque<deque<deque<deque<deque<Vertex>::pointer > > > >&, double);
+	bool makeCell(deque<Cell>::reference, deque<deque<deque<deque<deque<Vertex>::pointer > > > >&, double);
 	void drawEdges();
 	int  listOfCellsSize();
 protected:
@@ -158,6 +169,7 @@ protected:
 	deque<Cell> listOfCells;
 	deque<Face>	listOfFaces;
 	deque<Edge>	listOfEdges;
+	map<string,deque<Face>::pointer> faceMap;
 	deque<Vertex>	listOfVertices;
 	deque<Vertex>	verticesXsort;
 	deque<Vertex>	verticesYsort;
