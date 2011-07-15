@@ -11,10 +11,13 @@ using namespace std;
 extern int firstCell;
 extern int lastCell;
 extern int faceToShow;
+extern bool showCircle;
+extern bool wire;
 
 Solid model;
 double camMotionStep=0.5;
 double eyeX=0, eyeY=0, eyeZ=0;
+double lookatx=0, lookaty=0, lookatz=0;
 void init(void)
 {
 	glShadeModel(GL_SMOOTH);							// Enable Smooth Shading
@@ -49,7 +52,7 @@ void display(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 //	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(8+eyeX,8+eyeY,8+eyeZ, 0,0,0, 0,1,0);
+	gluLookAt(8+eyeX,8+eyeY,8+eyeZ, lookatx,lookaty,lookatz, 0,1,0);
 	model.drawEdges();
 	drawAxes();
 	glColor4f(1.0,1.0,0.0,1.0);
@@ -101,6 +104,14 @@ void keyboard(unsigned char key, int x, int y)
 			eyeX+=camMotionStep;
 			glutPostRedisplay();
 			break;
+		case 'u':
+			lookatx-=camMotionStep;
+			glutPostRedisplay();
+			break;
+		case 'U':
+			lookatx+=camMotionStep;
+			glutPostRedisplay();
+			break;
 		case 'Y':
 			eyeY+=camMotionStep;
 			glutPostRedisplay();
@@ -109,12 +120,28 @@ void keyboard(unsigned char key, int x, int y)
 			eyeY-=camMotionStep;
 			glutPostRedisplay();
 			break;
+		case 'v':
+			lookaty-=camMotionStep;
+			glutPostRedisplay();
+			break;
+		case 'V':
+			lookaty+=camMotionStep;
+			glutPostRedisplay();
+			break;
 		case 'z':
 			eyeZ-=camMotionStep;
 			glutPostRedisplay();
 			break;
 		case 'Z':
 			eyeZ+=camMotionStep;
+			glutPostRedisplay();
+			break;
+		case 'w':
+			lookatz-=camMotionStep;
+			glutPostRedisplay();
+			break;
+		case 'W':
+			lookatz+=camMotionStep;
 			glutPostRedisplay();
 			break;
 		case '0':
@@ -138,7 +165,15 @@ void keyboard(unsigned char key, int x, int y)
 			glutPostRedisplay();
 			break;
 		case '3':
-			faceToShow=(faceToShow+1)%4;
+			faceToShow=(faceToShow+1)%54;
+			glutPostRedisplay();
+			break;
+		case 'c':
+			showCircle=!showCircle;
+			glutPostRedisplay();
+			break;
+		case 's':
+			wire=!wire;
 			glutPostRedisplay();
 			break;
 		default:

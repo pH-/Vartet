@@ -37,6 +37,7 @@ public:
 	bool   sameAs(Vertex&);
 //	void   setOppFace(deque<Face>::pointer);
 	void   incrNumOfOpenFaces();
+	void   decrNumOfOpenFaces();
 	void   setId(int id);
 	int    getId();
 	void	*sparePtr;						// a pointer to be used for temporary extension of a vertex object.
@@ -90,7 +91,8 @@ public:
 	void setNeighCell2(deque<Cell>::pointer);
 	Cell* getNeighCell1();
 	Cell* getNeighCell2();
-	void incrNumOfOpenFaces(deque<deque<deque<deque<deque<Vertex>::pointer > > > >&);
+	void incrNumOfOpenFaces();
+	void decrNumOfOpenFaces();
 	deque<Vertex>::pointer getOppositeVertex1();
 	deque<Vertex>::pointer getOppositeVertex2();
 private:
@@ -129,6 +131,8 @@ class Cell	{
 public:
 	Cell();
 	Cell(int);
+	void setId(string);
+	string getId();
 	void addVertex(deque<Vertex>::pointer);
 	void addFace(deque<Face>::pointer);
 	//void addNeighbour(deque<Cell>::pointer, deque<Face>::pointer);
@@ -142,15 +146,21 @@ public:
 	deque<deque<Face>::pointer>& getFaces();
 	//multimap<deque<Cell>::pointer, deque<Face>::pointer>& getNeighbours();
 	bool testCircumCircle(Vertex&,double[4]);
-	bool testCircumSphere(Vertex&,double[4]);
+	trippleBool testCircumSphere(Vertex&,double[4]);
 	void addFEVs(deque<Face>::pointer);
 	void delFEVs(deque<Face>::pointer);
 	bool checkOrientation(Vertex&);
-
+	void setCircumCenter(double[3]);
+	void setCircumRadius(double);
+	double getCircumRadius();
+	double* getCircumCenter();
 private:
+	string 						  id;
 	deque<deque<Vertex>::pointer> vertices;
 	deque<deque<Edge>::pointer>   edges;
 	deque<deque<Face>::pointer>   faces;
+	double						  circumCtr[3];
+	double						  circumRadius;
 	//multimap<deque<Cell>::pointer, deque<Face>::pointer> neighbours;
 };
 
@@ -159,13 +169,13 @@ public:
 	void populateVertices(deque<Vertex>&);
 	void delaunize();
 	//void sortVertices(axisToSort, deque<Vertex>, deque<Vertex>);
-	void dewall(axisToSort,deque<Vertex>&,map<int,deque<Face>::pointer>&, deque<deque<deque<deque<deque<Vertex>::pointer > > > >&);
+	void dewall(axisToSort,deque<Vertex>&,map<string,deque<Face>::pointer>&, deque<deque<deque<deque<deque<Vertex>::pointer > > > >&);
 	void *sparePtr;                                          // a pointer to be used for temporary extension of a Solid object.
 	bool makeCell(deque<Cell>::reference, deque<deque<deque<deque<deque<Vertex>::pointer > > > >&, double);
 	void drawEdges();
 	int  listOfCellsSize();
 protected:
-	void confirmWinnerVertex(deque<Cell>::reference, Vertex*&, double[4],deque<deque<deque<deque<deque<Vertex>::pointer > > > >&);
+	void confirmWinnerVertex(deque<Cell>::reference, Vertex*&,deque<deque<deque<deque<deque<Vertex>::pointer > > > >&);
 	deque<Cell> listOfCells;
 	deque<Face>	listOfFaces;
 	deque<Edge>	listOfEdges;

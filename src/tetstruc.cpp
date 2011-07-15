@@ -10,6 +10,8 @@ using namespace std;
 extern int firstCell;
 extern int lastCell;
 extern int faceToShow;
+extern bool showCircle;
+extern bool wire;
 int counter =0;
 
 ///Global Functions
@@ -104,6 +106,14 @@ void Vertex::incrNumOfOpenFaces()
 		numOfOpenFaces=1;
 	else
 		numOfOpenFaces++;
+}
+
+void Vertex::decrNumOfOpenFaces()
+{
+	if(numOfOpenFaces>0)
+		numOfOpenFaces--;
+	else
+		cout<<"flag error here"<<endl;
 }
 
 void Vertex::setId(int idNum)
@@ -210,58 +220,93 @@ void Face::addNormalDir(double normal[3])
 
 bool Face::testCircumSphere(Vertex& v, double centerRadius[4])
 {
-	double a[4][4], dx[4][4], dy[4][4], dz[4][4], c[4][4];
-	double deta, detdx, detdy, detdz, detc;
-	for(int i=0;i<3;i++)
+//	double a[4][4], dx[4][4], dy[4][4], dz[4][4], c[4][4];
+//	double deta, detdx, detdy, detdz, detc;
+//	for(int i=0;i<3;i++)
+//	{
+//		dx[i][0]=dy[i][0]=dz[i][0]=c[i][0]=pow(vertices[i]->getCoord(X),2)+pow(vertices[i]->getCoord(Y),2)+pow(vertices[i]->getCoord(Z),2);
+//		a[i][0]=vertices[i]->getCoord(X);
+//
+//		dx[i][1]=a[i][1]=vertices[i]->getCoord(Y);
+//		dy[i][1]=vertices[i]->getCoord(X);
+//		dz[i][1]=c[i][1]=vertices[i]->getCoord(X);
+//
+//		dx[i][2]=a[i][2]=vertices[i]->getCoord(Z);
+//		dy[i][2]=vertices[i]->getCoord(Z);
+//		dz[i][2]=c[i][2]=vertices[i]->getCoord(Y);
+//
+//		a[i][3]=1;
+//		dx[i][3]=1;
+//		dy[i][3]=1;
+//		dz[i][3]=1;
+//		c[i][3]=vertices[i]->getCoord(Z);
+//	}
+//	dx[3][0]=dy[3][0]=dz[3][0]=c[3][0]=pow(v.getCoord(X),2)+pow(v.getCoord(Y),2)+pow(v.getCoord(Z),2);
+//	a[3][0]=v.getCoord(X);
+//
+//	dx[3][1]=a[3][1]=v.getCoord(Y);
+//	dy[3][1]=v.getCoord(X);
+//	dz[3][1]=c[3][1]=v.getCoord(X);
+//
+//	dx[3][2]=a[3][2]=v.getCoord(Z);
+//	dy[3][2]=v.getCoord(Z);
+//	dz[3][2]=c[3][2]=v.getCoord(Y);
+//
+//	a[3][3]=1;
+//	dx[3][3]=1;
+//	dy[3][3]=1;
+//	dz[3][3]=1;
+//	c[3][3]=v.getCoord(Z);
+//	deta  = determinant4x4(a);
+//	detdx = determinant4x4(dx);
+//	detdy = -1*determinant4x4(dy);
+//	detdz = determinant4x4(dz);
+//	detc  = determinant4x4(c);
+//	if(deta)
+//	{
+//		centerRadius[0]=detdx/2*deta;
+//		centerRadius[1]=detdy/2*deta;
+//		centerRadius[2]=detdz/2*deta;
+//		centerRadius[3]=sqrt(detdx*detdx+ detdy*detdy+ detdz*detdz - 4*deta*detc)/(2*abs(deta));
+//		return true;
+//	}
+//	else
+//		return false;
+	double a[3], bma[3], cma[3], dma[3], tempcrs1[3], tempcrs2[3], tempcrs3[3], radiusVector[3], dinomMatrix[3][3];
+	double lensqdma, lensqcma, lensqbma, detdinomMatrix;
+	for(int i=0; i<3; i++)
 	{
-		dx[i][0]=dy[i][0]=dz[i][0]=c[i][0]=pow(vertices[i]->getCoord(X),2)+pow(vertices[i]->getCoord(Y),2)+pow(vertices[i]->getCoord(Z),2);
-		a[i][0]=vertices[i]->getCoord(X);
-
-		dx[i][1]=a[i][1]=vertices[i]->getCoord(Y);
-		dy[i][1]=vertices[i]->getCoord(X);
-		dz[i][1]=c[i][1]=vertices[i]->getCoord(X);
-
-		dx[i][2]=a[i][2]=vertices[i]->getCoord(Z);
-		dy[i][2]=vertices[i]->getCoord(Z);
-		dz[i][2]=c[i][2]=vertices[i]->getCoord(Y);
-
-		a[i][3]=1;
-		dx[i][3]=1;
-		dy[i][3]=1;
-		dz[i][3]=1;
-		c[i][3]=vertices[i]->getCoord(Z);
+		a[i]  =vertices[0]->getCoord((axisToSort)i);
+		bma[i]=vertices[1]->getCoord((axisToSort)i)-a[i];
+		cma[i]=vertices[2]->getCoord((axisToSort)i)-a[i];
+		dma[i]=v.getCoord((axisToSort)i)-a[i];
+		dinomMatrix[0][i]=bma[i];
+		dinomMatrix[1][i]=cma[i];
+		dinomMatrix[2][i]=dma[i];
 	}
-	dx[3][0]=dy[3][0]=dz[3][0]=c[3][0]=pow(v.getCoord(X),2)+pow(v.getCoord(Y),2)+pow(v.getCoord(Z),2);
-	a[3][0]=v.getCoord(X);
-
-	dx[3][1]=a[3][1]=v.getCoord(Y);
-	dy[3][1]=v.getCoord(X);
-	dz[3][1]=c[3][1]=v.getCoord(X);
-
-	dx[3][2]=a[3][2]=v.getCoord(Z);
-	dy[3][2]=v.getCoord(Z);
-	dz[3][2]=c[3][2]=v.getCoord(Y);
-
-	a[3][3]=1;
-	dx[3][3]=1;
-	dy[3][3]=1;
-	dz[3][3]=1;
-	c[3][3]=v.getCoord(Z);
-	deta  = determinant4x4(a);
-	detdx = determinant4x4(dx);
-	detdy = -1*determinant4x4(dy);
-	detdz = determinant4x4(dz);
-	detc  = determinant4x4(c);
-	if(deta)
+	detdinomMatrix=determinant3x3(dinomMatrix);
+	if(detdinomMatrix)
 	{
-		centerRadius[0]=detdx/2*deta;
-		centerRadius[1]=detdy/2*deta;
-		centerRadius[2]=detdz/2*deta;
-		centerRadius[3]=sqrt(detdx*detdx+ detdy*detdy+ detdz*detdz - 4*deta*detc)/(2*abs(deta));
+		CROSS(tempcrs1,bma,cma);
+		CROSS(tempcrs2,dma,bma);
+		CROSS(tempcrs3,cma,dma);
+		lensqdma=vector3dLenSq(dma);
+		lensqcma=vector3dLenSq(cma);
+		lensqbma=vector3dLenSq(bma);
+		MULT(tempcrs1,tempcrs1,lensqdma);
+		MULT(tempcrs2,tempcrs2,lensqcma);
+		MULT(tempcrs3,tempcrs3,lensqbma);
+		ADD(radiusVector,tempcrs1,tempcrs2);
+		ADD(radiusVector,radiusVector,tempcrs3);
+		centerRadius[3]=sqrt(vector3dLenSq(radiusVector));
+		centerRadius[3]/=abs(2*detdinomMatrix);
+		MULT(radiusVector, radiusVector, (1/(2*detdinomMatrix)));
+		ADD(centerRadius,a,radiusVector);
 		return true;
 	}
 	else
 		return false;
+
 }
 
 deque<Vertex>::pointer* Face::getVertices()
@@ -282,6 +327,7 @@ void Face::setNeighbourCell(deque<Cell>::pointer pCell)
 		cell2=pCell;
 	else
 		cout<<"ERROR while setting neighbour"<<endl;
+	cout.flush();
 }
 
 void Face::setNeighCell1(deque<Cell>::pointer cellPtr)
@@ -294,13 +340,21 @@ void Face::setNeighCell2(deque<Cell>::pointer cellPtr)
 	cell2=cellPtr;
 }
 
-void Face::incrNumOfOpenFaces(deque<deque<deque<deque<deque<Vertex>::pointer > > > >& grid)
+void Face::incrNumOfOpenFaces()
 {
-	unsigned int *gridCoord;
-	gridCoord = (unsigned int*)malloc(sizeof(unsigned int)*4);
 	for(int i=0; i<3; i++)
 	{
 		vertices[i]->incrNumOfOpenFaces();
+		//gridCoord=(unsigned int*)vertices[i]->sparePtr;
+		//grid[gridCoord[0]][gridCoord[1]][gridCoord[2]][gridCoord[3]]->incrNumOfOpenFaces();
+	}
+}
+
+void Face::incrNumOfOpenFaces()
+{
+	for(int i=0; i<3; i++)
+	{
+		vertices[i]->decrNumOfOpenFaces();
 		//gridCoord=(unsigned int*)vertices[i]->sparePtr;
 		//grid[gridCoord[0]][gridCoord[1]][gridCoord[2]][gridCoord[3]]->incrNumOfOpenFaces();
 	}
@@ -355,6 +409,16 @@ Cell::Cell(int size)
 	faces.resize(size);
 	//neighbours.resize(size);
 	edges.resize(size);
+}
+
+void Cell::setId(string cellId)
+{
+	id = cellId;
+}
+
+string Cell::getId()
+{
+	return id;
 }
 
 void Cell::addVertex(deque<Vertex>::pointer vertex)
@@ -430,13 +494,42 @@ bool Cell::testCircumCircle(Vertex& v, double centerRadius[4])
 	return edges[0]->testCircumCircle(v,centerRadius);
 }
 
-bool Cell::testCircumSphere(Vertex& v, double centerRadius[4])
+trippleBool Cell::testCircumSphere(Vertex& v, double centerRadius[4])
 {
-	return faces[0]->testCircumSphere(v,centerRadius);
+	if(faces[0]->testCircumSphere(v,centerRadius))
+	{
+		Vertex ctr(centerRadius[0],centerRadius[1],centerRadius[2], false);
+		if(faces.back()->getOppositeVertex1() || faces.back()->getOppositeVertex2())
+		{
+			if(faces.back()->getOppositeVertex1())
+			{
+				if(faces.back()->getOppositeVertex1()->getSqDistance(ctr)<centerRadius[3]*centerRadius[3])
+					return false_val;
+				if(faces.back()->getOppositeVertex1()->getSqDistance(ctr)==centerRadius[3]*centerRadius[3])
+					return midstate_val;
+			}
+			else
+			{
+				if(faces.back()->getOppositeVertex2()->getSqDistance(ctr)<centerRadius[3]*centerRadius[3])
+					return false_val;
+				if(faces.back()->getOppositeVertex2()->getSqDistance(ctr)==centerRadius[3]*centerRadius[3])
+					return midstate_val;
+			}
+			if(!this->checkOrientation(ctr))
+			{
+				centerRadius[3]*=-1;
+			}
+		}
+		return true_val;
+	}
+	else
+		return false_val;
 }
 
 void Cell::addFEVs(deque<Face>::pointer face)
 {
+//	if(face->getId()=="17,32,33")
+//		cout<<"detect culprit"<<endl;
 	for(int i=0; i<3; i++)
 	{
 		vertices.push_back(face->getVertices()[i]);
@@ -447,11 +540,8 @@ void Cell::addFEVs(deque<Face>::pointer face)
 
 void Cell::delFEVs(deque<Face>::pointer face)
 {
-	for(int i=0; i<3; i++)
-	{
-		vertices.clear();
-		edges.clear();
-	}
+	vertices.clear();
+	edges.clear();
 	if(face->getNeighCell1()==this)
 		face->setNeighCell1(NULL);
 	else
@@ -482,6 +572,27 @@ bool Cell::checkOrientation(Vertex& v2)
 	else
 		return false;
 }
+
+void Cell::setCircumCenter(double circumCenter[3])
+{
+	for(int i=0; i<3; i++)
+		circumCtr[i]=circumCenter[i];
+}
+
+void Cell::setCircumRadius(double radius)
+{
+	circumRadius=radius;
+}
+
+double Cell::getCircumRadius()
+{
+	return circumRadius;
+}
+
+double* Cell::getCircumCenter()
+{
+	return circumCtr;
+}
 ///Solid class
 
 void Solid::populateVertices(deque<Vertex>& vertexList)
@@ -500,7 +611,7 @@ void Solid::delaunize()
 {
 	deque<Vertex> vertices;
 	deque<Vertex>::iterator vit;
-	map<int,deque<Face>::pointer> afl;
+	map<string,deque<Face>::pointer> afl;
 	deque<deque<deque<deque<deque<Vertex>::pointer > > > > grid;
 	double minx=0.0, miny=0.0, minz=0.0, maxx=0.0, maxy=0.0,maxz=0.0;
 	for(vit=listOfVertices.begin(); vit!=listOfVertices.end(); vit++)
@@ -531,8 +642,9 @@ void Solid::delaunize()
 		}
 	}
 	int xrange,yrange,zrange;
-	int stepSize=1;
-	xrange = 1+floor(maxx)-floor(minx);	yrange=1+floor(maxy)-floor(miny); zrange=1+floor(maxz)-floor(minz);
+	double stepSize;
+	stepSize=1.0;
+	xrange = 1+(floor(maxx/stepSize)-floor(minx/stepSize));	yrange=1+(floor(maxy/stepSize)-floor(miny/stepSize)); zrange=1+(floor(maxz/stepSize)-floor(minz/stepSize));
 	grid.resize(xrange);
 	for(int i=0;i<xrange;i++)
 	{
@@ -552,14 +664,20 @@ void Solid::delaunize()
 	{
 		//int gridCoords[3];
 		gridcoords= (int*)malloc(sizeof(int)*4);
-		gridcoords[0]=(int)(listOfVertices[i].getXCoord()-floor(minx))/stepSize;
-		gridcoords[1]=(int)(listOfVertices[i].getYCoord()-floor(miny))/stepSize;
-		gridcoords[2]=(int)(listOfVertices[i].getZCoord()-floor(minz))/stepSize;
+		gridcoords[0]=(int)(listOfVertices[i].getXCoord()/stepSize-floor(minx/stepSize));
+		gridcoords[1]=(int)(listOfVertices[i].getYCoord()/stepSize-floor(miny/stepSize));
+		gridcoords[2]=(int)(listOfVertices[i].getZCoord()/stepSize-floor(minz/stepSize));
 		grid[gridcoords[0]][gridcoords[1]][gridcoords[2]].push_back(&listOfVertices[i]);
 		gridcoords[3]= grid[gridcoords[0]][gridcoords[1]][gridcoords[2]].size()-1;
 		listOfVertices[i].sparePtr=(int*)gridcoords;
 		vertices.push_back(listOfVertices[i]);
 	}
+	for(int i=0; i<grid.size(); i++)
+		for(int j=0; j<grid[i].size(); j++)
+			for(int k=0; k<grid[i][j].size(); k++)
+				if(grid[i][j][k].size())
+					cout<<"good coord:"<<i<<","<<j<<","<<k<<endl;
+	cout.flush();
 	sort(vertices.begin(),vertices.end(),sortVertexX);
 	dewall(X, vertices, afl, grid);
 }
@@ -569,35 +687,66 @@ void Solid::drawEdges()
 	deque<deque<Edge>::pointer>::iterator eit;
 	//deque<deque<Face>::pointer>::iterator fit;
 	deque<Vertex>::iterator vit;
+	double resolution=1;
+//	for(int i=0; i<faceToShow; i++)
+//	{
+//		glPushMatrix();
+//		glColor4f(1.0,1.0,0.0,1.0);
+//		glTranslated(listOfVertices[i].getXCoord(), listOfVertices[i].getYCoord(),listOfVertices[i].getZCoord());
+//		glutSolidSphere(0.05,10,10);
+//		glPopMatrix();
+//	}
+
+//	for(int i=firstCell; i<lastCell; i++)
+//	{
+//		int j=0;
+//
+//		for(j=0; j<4; j++)
+//		{
+//			glColor4f(0.0,1.0/(j+1),1.0,1.0);
+//			//cout<<"number of faces:"<<listOfCells[i].getFaces().size()<<endl;
+//			glBegin(GL_TRIANGLES);
+//			glVertex3d(listOfCells[i].getFaces()[j]->getVertices()[0]->getXCoord(), listOfCells[i].getFaces()[j]->getVertices()[0]->getYCoord(), listOfCells[i].getFaces()[j]->getVertices()[0]->getZCoord());
+//			glVertex3d(listOfCells[i].getFaces()[j]->getVertices()[1]->getXCoord(), listOfCells[i].getFaces()[j]->getVertices()[1]->getYCoord(), listOfCells[i].getFaces()[j]->getVertices()[1]->getZCoord());
+//			glVertex3d(listOfCells[i].getFaces()[j]->getVertices()[2]->getXCoord(), listOfCells[i].getFaces()[j]->getVertices()[2]->getYCoord(), listOfCells[i].getFaces()[j]->getVertices()[2]->getZCoord());
+////			cout<<"v1-->X,Y,Z:"<<listOfCells[i].getFaces()[j]->getVertices()[0]->getXCoord()<<","<< listOfCells[i].getFaces()[j]->getVertices()[0]->getXCoord()<<","<< listOfCells[i].getFaces()[j]->getVertices()[0]->getXCoord()<<endl;
+////			cout<<"v2-->X,Y,Z:"<<listOfCells[i].getFaces()[j]->getVertices()[1]->getXCoord()<<","<< listOfCells[i].getFaces()[j]->getVertices()[1]->getXCoord()<<","<< listOfCells[i].getFaces()[j]->getVertices()[1]->getXCoord()<<endl;
+////			cout<<"v3-->X,Y,Z:"<<listOfCells[i].getFaces()[j]->getVertices()[2]->getXCoord()<<","<< listOfCells[i].getFaces()[j]->getVertices()[2]->getXCoord()<<","<< listOfCells[i].getFaces()[j]->getVertices()[2]->getXCoord()<<endl;
+//			glEnd();
+//		}
+//
+//	}
 	for(vit=listOfVertices.begin(); vit!=listOfVertices.end(); vit++)
 	{
 		glPushMatrix();
 		glColor4f(1.0,1.0,0.0,1.0);
-		glTranslated(vit->getXCoord(), vit->getYCoord(), vit->getZCoord());
+		glTranslated(vit->getXCoord()/resolution, vit->getYCoord()/resolution, vit->getZCoord()/resolution);
 		glutSolidSphere(0.05,10,10);
 		glPopMatrix();
 	}
 	for(int i=firstCell; i<lastCell; i++)
 	{
+		double *center;
+		glColor4f(1.0,0.0,0.0,1.0);
 		for(eit=listOfCells[i].getEdges().begin(); eit!=listOfCells[i].getEdges().end(); eit++)
 		{
 			glColor4f(1.0,0.0,0.0,1.0);
 			glBegin(GL_LINES);
-			glVertex3d((*eit)->getVertex()[0]->getXCoord(), (*eit)->getVertex()[0]->getYCoord(), (*eit)->getVertex()[0]->getZCoord());
-			glVertex3d((*eit)->getVertex()[1]->getXCoord(), (*eit)->getVertex()[1]->getYCoord(), (*eit)->getVertex()[1]->getZCoord());
+			glVertex3d((*eit)->getVertex()[0]->getXCoord()/resolution, (*eit)->getVertex()[0]->getYCoord()/resolution, (*eit)->getVertex()[0]->getZCoord()/resolution);
+			glVertex3d((*eit)->getVertex()[1]->getXCoord()/resolution, (*eit)->getVertex()[1]->getYCoord()/resolution, (*eit)->getVertex()[1]->getZCoord()/resolution);
 			glEnd();
 		}
-//		for(int j=0; j<3; j++)
-//		{
-//			cout<<"number of faces:"<<listOfCells[i].getFaces().size()<<endl;
-//			glColor4f(1.0,0.0,0.0,1.0);
-//			glBegin(GL_LINES);
-//			glVertex3d(listOfCells[i].getFaces()[faceToShow].getEdges()[j]->getVertex()[0]->getXCoord(), listOfCells[i].getFaces()[faceToShow].getEdges()[j]->getVertex()[0]->getYCoord(), listOfCells[i].getFaces()[faceToShow].getEdges()[j]->getVertex()[0]->getZCoord());
-//			glVertex3d(listOfCells[i].getFaces()[faceToShow].getEdges()[j]->getVertex()[1]->getXCoord(), listOfCells[i].getFaces()[faceToShow].getEdges()[j]->getVertex()[1]->getYCoord(), listOfCells[i].getFaces()[faceToShow].getEdges()[j]->getVertex()[1]->getZCoord());
-//			cout<<"edge-->X,Y,Z:"<<listOfCells[i].getFaces()[faceToShow].getEdges()[j]->getVertex()[0]->getXCoord()<<","<< listOfCells[i].getFaces()[faceToShow].getEdges()[j]->getVertex()[0]->getYCoord()<<","<< listOfCells[i].getFaces()[faceToShow].getEdges()[j]->getVertex()[0]->getZCoord()<<endl;
-//			cout<<"vert2->X,Y,Z:"<<listOfCells[i].getFaces()[faceToShow].getEdges()[j]->getVertex()[1]->getXCoord()<<","<< listOfCells[i].getFaces()[faceToShow].getEdges()[j]->getVertex()[1]->getYCoord()<<","<< listOfCells[i].getFaces()[faceToShow].getEdges()[j]->getVertex()[1]->getZCoord()<<endl;
-//			glEnd();
-//		}
+		if(showCircle)
+		{
+			center=listOfCells[i].getCircumCenter();
+			glPushMatrix();
+			glTranslated(center[0]/resolution,center[1]/resolution,center[2]/resolution);
+			if(wire)
+				glutWireSphere(listOfCells[i].getCircumRadius()/resolution,40,40);
+			else
+				glutSolidSphere(listOfCells[i].getCircumRadius()/resolution,40,40);
+			glPopMatrix();
+		}
 	}
 }
 
