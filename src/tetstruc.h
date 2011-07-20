@@ -38,6 +38,7 @@ public:
 //	void   setOppFace(deque<Face>::pointer);
 	void   incrNumOfOpenFaces();
 	void   decrNumOfOpenFaces();
+	int    getNumOfOpenFaces();
 	void   setId(int id);
 	int    getId();
 	void	*sparePtr;						// a pointer to be used for temporary extension of a vertex object.
@@ -93,6 +94,7 @@ public:
 	Cell* getNeighCell2();
 	void incrNumOfOpenFaces();
 	void decrNumOfOpenFaces();
+	int getNumOfOpenFaces();
 	deque<Vertex>::pointer getOppositeVertex1();
 	deque<Vertex>::pointer getOppositeVertex2();
 private:
@@ -154,6 +156,7 @@ public:
 	void setCircumRadius(double);
 	double getCircumRadius();
 	double* getCircumCenter();
+	void delVertices();
 private:
 	string 						  id;
 	deque<deque<Vertex>::pointer> vertices;

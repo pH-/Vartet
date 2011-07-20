@@ -103,7 +103,10 @@ inline double determinant3x3 (double matrix[3][3])
 		intermediate*=pow((-1.0),i);
 		determinant+= intermediate;
 	}
-	return determinant;
+	if(determinant*pow(10.0,6) <1 && determinant*pow(10.0,6)> -1)
+			return 0;
+		else
+			return determinant;
 }
 inline double determinant4x4 (double matrix[4][4])
 {

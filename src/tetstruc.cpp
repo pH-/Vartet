@@ -116,6 +116,10 @@ void Vertex::decrNumOfOpenFaces()
 		cout<<"flag error here"<<endl;
 }
 
+int Vertex::getNumOfOpenFaces()
+{
+	return numOfOpenFaces;
+}
 void Vertex::setId(int idNum)
 {
 	id=idNum;
@@ -350,7 +354,7 @@ void Face::incrNumOfOpenFaces()
 	}
 }
 
-void Face::incrNumOfOpenFaces()
+void Face::decrNumOfOpenFaces()
 {
 	for(int i=0; i<3; i++)
 	{
@@ -360,6 +364,10 @@ void Face::incrNumOfOpenFaces()
 	}
 }
 
+int Face::getNumOfOpenFaces()
+{
+	return (vertices[0]->getNumOfOpenFaces() && vertices[1]->getNumOfOpenFaces() && vertices[2]->getNumOfOpenFaces());
+}
 deque<Cell>::pointer Face::getNeighCell1()
 {
 	return cell1;
@@ -593,6 +601,11 @@ double* Cell::getCircumCenter()
 {
 	return circumCtr;
 }
+
+void Cell::delVertices()
+{
+	vertices.clear();
+}
 ///Solid class
 
 void Solid::populateVertices(deque<Vertex>& vertexList)
@@ -643,7 +656,7 @@ void Solid::delaunize()
 	}
 	int xrange,yrange,zrange;
 	double stepSize;
-	stepSize=1.0;
+	stepSize=1.0/10.0;
 	xrange = 1+(floor(maxx/stepSize)-floor(minx/stepSize));	yrange=1+(floor(maxy/stepSize)-floor(miny/stepSize)); zrange=1+(floor(maxz/stepSize)-floor(minz/stepSize));
 	grid.resize(xrange);
 	for(int i=0;i<xrange;i++)
@@ -687,7 +700,7 @@ void Solid::drawEdges()
 	deque<deque<Edge>::pointer>::iterator eit;
 	//deque<deque<Face>::pointer>::iterator fit;
 	deque<Vertex>::iterator vit;
-	double resolution=1;
+	double resolution=0.1;
 //	for(int i=0; i<faceToShow; i++)
 //	{
 //		glPushMatrix();
@@ -719,9 +732,9 @@ void Solid::drawEdges()
 	for(vit=listOfVertices.begin(); vit!=listOfVertices.end(); vit++)
 	{
 		glPushMatrix();
-		glColor4f(1.0,1.0,0.0,1.0);
+		glColor4f(0.0,1.0,0.0,1.0);
 		glTranslated(vit->getXCoord()/resolution, vit->getYCoord()/resolution, vit->getZCoord()/resolution);
-		glutSolidSphere(0.05,10,10);
+		glutSolidSphere(0.005,10,10);
 		glPopMatrix();
 	}
 	for(int i=firstCell; i<lastCell; i++)

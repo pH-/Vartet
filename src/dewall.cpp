@@ -48,13 +48,21 @@ void Solid::dewall(axisToSort axis, deque<Vertex>& vertices, map<string,deque<Fa
 //	cout<<"alpha Plane:"<<alphaPlane<<endl;
 	if (activeFaceList.size() == 0)
 	{
+		int findFirstVertex=0;
 		newCell = new Cell();
 		if (newCell->getVertexListSize() <=4) {
 			newCell->addVertex(&listOfVertices[vertices[medianIndex].getId()]);
 		}
 		listOfCells.push_back(*newCell);
 		makeCell(listOfCells.back(),grid, alphaPlane);
-		makeCell(listOfCells.back(),grid, alphaPlane);
+		while(!makeCell(listOfCells.back(),grid, alphaPlane) && (medianIndex-findFirstVertex))
+		{
+			listOfCells.back().delVertices();
+			findFirstVertex++;
+			listOfCells.back().addVertex(&listOfVertices[vertices[medianIndex-findFirstVertex].getId()]);
+			makeCell(listOfCells.back(),grid, alphaPlane);
+			cout<<"still in loop"<<endl;
+		}
 //		cout << "vertex1" << newCell->getVertices()[0].getXCoord()<<endl;
 //		cout<<"Edges1, v1, xcoord:"<<listOfCells.back().getEdges()[0].getVertex()[0]->getXCoord()<<endl;
 //		cout<<"Edges1, v2, xcoord:"<<listOfCells.back().getEdges()[0].getVertex()[1]->getXCoord()<<endl;
@@ -88,7 +96,7 @@ void Solid::dewall(axisToSort axis, deque<Vertex>& vertices, map<string,deque<Fa
 	}
 	while(aflalpha.size())
 	{
-//		cout<<"Size of aflalpha:"<<aflalpha.size()<<endl;
+		cout<<"Size of aflalpha:"<<aflalpha.size()<<endl;
 //		cout<<"Size of cell list:"<<listOfCells.size()<<endl;
 //		for(map<string,deque<Face>::pointer>::iterator it=aflalpha.begin(); it!=aflalpha.end(); it++)
 //			cout<<"aflalpha contents:"<<(*it).first<<","<<(*it).second<<endl;
@@ -99,10 +107,15 @@ void Solid::dewall(axisToSort axis, deque<Vertex>& vertices, map<string,deque<Fa
 		deque<deque<Face>::pointer>::iterator faceiter;
 		for(aflit=aflalpha.begin(); aflit!=aflalpha.end(); )
 		{
-			if(!(*aflit).first.compare("31,44,49"))
+//			if(!(*aflit).first.compare("11,12,49"))
+//			{
+//				cout<<"in trouble";
+//				goto allend;
+//			}
+			if(!(*aflit).second->getNumOfOpenFaces())
 			{
-				cout<<"in trouble";
-				goto allend;
+				aflalpha.erase(aflit++);
+				continue;
 			}
 			if((*aflit).second->getNeighCell1() && (*aflit).second->getNeighCell2())
 			{
@@ -133,15 +146,15 @@ void Solid::dewall(axisToSort axis, deque<Vertex>& vertices, map<string,deque<Fa
 					}
 					else if((*faceiter)->getNeighCell1() && (*faceiter)->getNeighCell2())
 						continue;
-					else if(((*faceiter)->getVertices()[0]->getXCoord())<alphaPlane
-							&& ((*faceiter)->getVertices()[1]->getXCoord())<alphaPlane
-							&& ((*faceiter)->getVertices()[2]->getXCoord())<alphaPlane)
+					else if(((*faceiter)->getVertices()[0]->getCoord(axis))<alphaPlane
+							&& ((*faceiter)->getVertices()[1]->getCoord(axis))<alphaPlane
+							&& ((*faceiter)->getVertices()[2]->getCoord(axis))<alphaPlane)
 					{
 						afllow.insert(pair<string,deque<Face>::pointer>((*faceiter)->getId(), *faceiter));
 					}
-					else if(((*faceiter)->getVertices()[0]->getXCoord())>alphaPlane
-							&& ((*faceiter)->getVertices()[1]->getXCoord())>alphaPlane
-							&& ((*faceiter)->getVertices()[2]->getXCoord())>alphaPlane)
+					else if(((*faceiter)->getVertices()[0]->getCoord(axis))>alphaPlane
+							&& ((*faceiter)->getVertices()[1]->getCoord(axis))>alphaPlane
+							&& ((*faceiter)->getVertices()[2]->getCoord(axis))>alphaPlane)
 					{
 						aflhigh.insert(pair<string,deque<Face>::pointer>((*faceiter)->getId(),*faceiter));
 					}
@@ -159,7 +172,7 @@ void Solid::dewall(axisToSort axis, deque<Vertex>& vertices, map<string,deque<Fa
 			}
 			cout.flush();
 		}
-		//cout<<"alpha size:"<<aflalpha.size()<<endl;
+		cout<<"alpha size:"<<aflalpha.size()<<endl;
 		//cout<<"Number of cells"<<listOfCells.size()<<endl;
 		//cout<<"Number of faces"<<listOfFaces.size()<<endl;
 //		map<string,deque<Face>::pointer>::iterator fmapit;
@@ -175,9 +188,12 @@ allend:
 	cout<<"afllowlist:"<<afllow.size()<<endl;
 	cout<<"aflhighlist:"<<aflhigh.size()<<endl;
 	cout.flush();
-	if(!jump)
+	if(!jump && afllow.size())
 	{
 		dewall((axisToSort)((axis+1)%3), verticesLow, afllow, grid);
+	}
+	if(!jump && aflhigh.size())
+	{
 		dewall((axisToSort)((axis+1)%3), verticesHigh, aflhigh, grid);
 	}
 
@@ -322,7 +338,7 @@ bool Solid::makeCell(deque<Cell>::reference cell, deque<deque<deque<deque<deque<
 						{
 							for(unsigned int indexer=0; indexer<grid[i][j][k].size(); indexer++)
 							{
-								cout<<"\ttested vertex"<<grid[i][j][k][indexer]->getId()<<endl;
+//								cout<<"\ttested vertex"<<grid[i][j][k][indexer]->getId()<<endl;
 								if(grid[i][j][k][indexer]->getId()==cell.getVertices()[0]->getId()
 								|| grid[i][j][k][indexer]->getId()==cell.getVertices()[1]->getId())
 									continue;
@@ -426,7 +442,7 @@ bool Solid::makeCell(deque<Cell>::reference cell, deque<deque<deque<deque<deque<
 			cell.addFace(&listOfFaces.back());
 			//cell.getFaces()[0].addVertices(&cell.getVertices()[0],&cell.getVertices()[1],&cell.getVertices()[2]);
 			//cell.getFaces()[0].addEdges(&cell.getEdges()[0],&cell.getEdges()[1],&cell.getEdges()[2]);
-			cell.getFaces()[0]->incrNumOfOpenFaces(grid);
+			cell.getFaces()[0]->incrNumOfOpenFaces();
 		}
 		if(!twoVertices && winnerVertex)
 		{
@@ -579,7 +595,7 @@ void Solid::confirmWinnerVertex(deque<Cell>::reference cell,Vertex*& winnerVerte
 				{
 					for(unsigned int indexer=0; indexer<grid[i][j][k].size(); indexer++)
 					{
-						cout<<"rechk\ttested vertex"<<grid[i][j][k][indexer]->getId()<<endl;
+//						cout<<"rechk\ttested vertex"<<grid[i][j][k][indexer]->getId()<<endl;
 						if( (cell.getVertexListSize()==2 && cell.testCircumCircle(*grid[i][j][k][indexer],newCenterRadius))
 						  ||(cell.getVertexListSize()==3 && (tstSphrReturn=cell.testCircumSphere(*grid[i][j][k][indexer],newCenterRadius))))
 						{
