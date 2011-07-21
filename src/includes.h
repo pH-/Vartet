@@ -41,7 +41,7 @@
 
 enum axisToSort { X, Y, Z};
 enum trippleBool{ false_val, true_val, midstate_val};
-
+#define STEPSIZE 0.1
 
 #include "tetstruc.h"
 

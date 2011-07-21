@@ -705,7 +705,7 @@ void Solid::drawEdges()
 //	{
 //		glPushMatrix();
 //		glColor4f(1.0,1.0,0.0,1.0);
-//		glTranslated(listOfVertices[i].getXCoord(), listOfVertices[i].getYCoord(),listOfVertices[i].getZCoord());
+//		glTranslated(listOfVertices[i].getXCoord()/resolution, listOfVertices[i].getYCoord()/resolution,listOfVertices[i].getZCoord()/resolution);
 //		glutSolidSphere(0.05,10,10);
 //		glPopMatrix();
 //	}
@@ -734,7 +734,7 @@ void Solid::drawEdges()
 		glPushMatrix();
 		glColor4f(0.0,1.0,0.0,1.0);
 		glTranslated(vit->getXCoord()/resolution, vit->getYCoord()/resolution, vit->getZCoord()/resolution);
-		glutSolidSphere(0.005,10,10);
+		glutSolidSphere(0.05,10,10);
 		glPopMatrix();
 	}
 	for(int i=firstCell; i<lastCell; i++)

@@ -165,7 +165,7 @@ void keyboard(unsigned char key, int x, int y)
 			glutPostRedisplay();
 			break;
 		case '3':
-			faceToShow=(faceToShow+1)%54;
+			faceToShow=(faceToShow+1)%11;
 			glutPostRedisplay();
 			break;
 		case 'c':

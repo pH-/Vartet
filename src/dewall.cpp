@@ -63,6 +63,8 @@ void Solid::dewall(axisToSort axis, deque<Vertex>& vertices, map<string,deque<Fa
 			makeCell(listOfCells.back(),grid, alphaPlane);
 			cout<<"still in loop"<<endl;
 		}
+		if(listOfCells.back().getVertexListSize()!=4)
+			return;
 //		cout << "vertex1" << newCell->getVertices()[0].getXCoord()<<endl;
 //		cout<<"Edges1, v1, xcoord:"<<listOfCells.back().getEdges()[0].getVertex()[0]->getXCoord()<<endl;
 //		cout<<"Edges1, v2, xcoord:"<<listOfCells.back().getEdges()[0].getVertex()[1]->getXCoord()<<endl;
@@ -74,6 +76,8 @@ void Solid::dewall(axisToSort axis, deque<Vertex>& vertices, map<string,deque<Fa
 //		cout<<"Edges1, v2, xcoord:"<<listOfCells.back().getEdges()[2].getVertex()[1]->getXCoord()<<endl;
 //
 //		cout.flush();
+		cout<<"killer"<<medianIndex-findFirstVertex<<endl;
+		cout<<"out here"<<endl;
 		for(int i=0; i<4;i++)
 		{
 			if((listOfCells.back().getFaces()[i]->getVertices()[0]->getXCoord())<alphaPlane
@@ -107,11 +111,11 @@ void Solid::dewall(axisToSort axis, deque<Vertex>& vertices, map<string,deque<Fa
 		deque<deque<Face>::pointer>::iterator faceiter;
 		for(aflit=aflalpha.begin(); aflit!=aflalpha.end(); )
 		{
-//			if(!(*aflit).first.compare("11,12,49"))
-//			{
-//				cout<<"in trouble";
-//				goto allend;
-//			}
+			if(!(*aflit).first.compare("20,36,93"))
+			{
+				cout<<"in trouble";
+				goto allend;
+			}
 			if(!(*aflit).second->getNumOfOpenFaces())
 			{
 				aflalpha.erase(aflit++);
@@ -183,16 +187,17 @@ void Solid::dewall(axisToSort axis, deque<Vertex>& vertices, map<string,deque<Fa
 //		}
 	}
 allend:
-	cout<<"done";
 	cout<<"aflalphalist:"<<aflalpha.size()<<endl;
 	cout<<"afllowlist:"<<afllow.size()<<endl;
 	cout<<"aflhighlist:"<<aflhigh.size()<<endl;
+	cout<<"verticesLow:"<<verticesLow.size()<<endl;
+	cout<<"verticesHigh:"<<verticesHigh.size()<<endl;
 	cout.flush();
-	if(!jump && afllow.size())
+	if(jump && verticesLow.size())
 	{
 		dewall((axisToSort)((axis+1)%3), verticesLow, afllow, grid);
 	}
-	if(!jump && aflhigh.size())
+	if(jump && verticesHigh.size())
 	{
 		dewall((axisToSort)((axis+1)%3), verticesHigh, aflhigh, grid);
 	}
@@ -205,6 +210,10 @@ bool Solid::makeCell(deque<Cell>::reference cell, deque<deque<deque<deque<deque<
 	int *centerCoords;
 	unsigned int stepSize = 0;
 	centerCoords = (int*)malloc(sizeof(int)*4);
+	unsigned short int layerlimitx=1, layerlimity=1, layerlimitz=1;
+	unsigned short int layerlimitX=1, layerlimitY=1, layerlimitZ=1;
+	bool endSearch=false;
+	int layer=0;
 	if(cell.getVertexListSize()==1)
 	{
 		winnerVertex=NULL;
@@ -215,14 +224,15 @@ bool Solid::makeCell(deque<Cell>::reference cell, deque<deque<deque<deque<deque<
 		centerCoords=(int*)cell.getVertices()[0]->sparePtr;
 		//cout<<endl<<centerCoords[0]<<","<<centerCoords[1]<<","<<centerCoords[2]<<endl;
 		//cout.flush();
-		while(winnerVertex==NULL)
+		while(winnerVertex==NULL && !endSearch)
 		{
+			cout<<"here"<<endl;
 			for(unsigned int i = centerCoords[0]-stepSize; i<grid.size() && i<=centerCoords[0]+stepSize; i++)
 				for(unsigned int j=centerCoords[1]-stepSize; j<grid[i].size() && j<=centerCoords[1]+stepSize ;j++)
 					for(unsigned int k=centerCoords[2]-stepSize; k<grid[i][j].size() && k<=centerCoords[2]+stepSize; k++)
 					{
-						if((i-(centerCoords[0]-stepSize) >0 && j-(centerCoords[1]-stepSize)>0 && k-(centerCoords[2]-stepSize)>0)
-						 &&(((centerCoords[0]+stepSize)-i > 0) && ((centerCoords[1]+stepSize)-j > 0) && ((centerCoords[2]+stepSize)-k > 0)))
+						if(layer && (i-(centerCoords[0]-stepSize) >=layerlimitx && j-(centerCoords[1]-stepSize)>=layerlimity && k-(centerCoords[2]-stepSize)>=layerlimitz)
+						 &&(((centerCoords[0]+stepSize)-i >= layerlimitX) && ((centerCoords[1]+stepSize)-j >= layerlimitY) && ((centerCoords[2]+stepSize)-k >= layerlimitZ)))
 							continue;
 						if(grid[i][j][k].size()==0)
 							continue;
@@ -252,7 +262,30 @@ bool Solid::makeCell(deque<Cell>::reference cell, deque<deque<deque<deque<deque<
 
 					}
 			stepSize++;
+			layer++;
+			if(!endSearch)
+			{
+				layer++;
+				stepSize++;
+				if(centerCoords[0]<stepSize)
+					layerlimitx=0;
+				if(centerCoords[1]<stepSize)
+					layerlimity=0;
+				if(centerCoords[2]<stepSize)
+					layerlimitz=0;
+				if((centerCoords[0]+stepSize) >grid.size())
+					layerlimitX=0;
+				if((centerCoords[1]+stepSize) > grid[0].size())
+					layerlimitY=0;
+				if((centerCoords[2]+stepSize) > grid[0][0].size())
+					layerlimitZ=0;
+				if((centerCoords[0]<stepSize) && (centerCoords[1]<stepSize) && (centerCoords[2]<stepSize)
+						&&((centerCoords[0]+stepSize) >grid.size()) &&((centerCoords[1]+stepSize) > grid[0].size()) &&((centerCoords[2]+stepSize) > grid[0][0].size()))
+					endSearch=true;
+			}
 		}
+		if(!winnerVertex)
+			return false;
 		cout<<"winner vertex :"<<winnerVertex->getXCoord()<<endl;
 		cell.addVertex(winnerVertex);
 		newEdge = new Edge();
@@ -338,7 +371,7 @@ bool Solid::makeCell(deque<Cell>::reference cell, deque<deque<deque<deque<deque<
 						{
 							for(unsigned int indexer=0; indexer<grid[i][j][k].size(); indexer++)
 							{
-//								cout<<"\ttested vertex"<<grid[i][j][k][indexer]->getId()<<endl;
+								cout<<"\ttested vertex"<<grid[i][j][k][indexer]->getId()<<endl;
 								if(grid[i][j][k][indexer]->getId()==cell.getVertices()[0]->getId()
 								|| grid[i][j][k][indexer]->getId()==cell.getVertices()[1]->getId())
 									continue;
@@ -581,9 +614,9 @@ void Solid::confirmWinnerVertex(deque<Cell>::reference cell,Vertex*& winnerVerte
 	bool possibleFail=false;
 	vertexGridCoords = (int*)malloc(sizeof(int)*4);
 	vertexGridCoords = (int*)cell.getVertices()[0]->sparePtr;
-	centerGrid[0]=vertexGridCoords[0]+(floor(cell.getCircumCenter()[0])-floor(cell.getVertices()[0]->getXCoord()));
-	centerGrid[1]=vertexGridCoords[1]+(floor(cell.getCircumCenter()[1])-floor(cell.getVertices()[0]->getYCoord()));
-	centerGrid[2]=vertexGridCoords[2]+(floor(cell.getCircumCenter()[2])-floor(cell.getVertices()[0]->getZCoord()));
+	centerGrid[0]=vertexGridCoords[0]+(floor(cell.getCircumCenter()[0]/STEPSIZE)-floor(cell.getVertices()[0]->getXCoord()/STEPSIZE));
+	centerGrid[1]=vertexGridCoords[1]+(floor(cell.getCircumCenter()[1]/STEPSIZE)-floor(cell.getVertices()[0]->getYCoord()/STEPSIZE));
+	centerGrid[2]=vertexGridCoords[2]+(floor(cell.getCircumCenter()[2]/STEPSIZE)-floor(cell.getVertices()[0]->getZCoord()/STEPSIZE));
 
 	for(unsigned int i = (centerGrid[0]<stepSize)?0:centerGrid[0]-stepSize; i<grid.size() && i<=centerGrid[0]+stepSize; i++)
 		for(unsigned int j=(centerGrid[1]<stepSize)?0:centerGrid[1]-stepSize; j<grid[i].size() && j<=centerGrid[1]+stepSize ;j++)
@@ -595,7 +628,7 @@ void Solid::confirmWinnerVertex(deque<Cell>::reference cell,Vertex*& winnerVerte
 				{
 					for(unsigned int indexer=0; indexer<grid[i][j][k].size(); indexer++)
 					{
-//						cout<<"rechk\ttested vertex"<<grid[i][j][k][indexer]->getId()<<endl;
+						cout<<"rechk\ttested vertex"<<grid[i][j][k][indexer]->getId()<<endl;
 						if( (cell.getVertexListSize()==2 && cell.testCircumCircle(*grid[i][j][k][indexer],newCenterRadius))
 						  ||(cell.getVertexListSize()==3 && (tstSphrReturn=cell.testCircumSphere(*grid[i][j][k][indexer],newCenterRadius))))
 						{
