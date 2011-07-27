@@ -90,6 +90,11 @@ double Vertex::getSqDistance(Vertex& v2)
 	return pow((getXCoord()-v2.getXCoord()),2) + pow((getYCoord()-v2.getYCoord()),2) +pow((getZCoord()-v2.getZCoord()),2);
 }
 
+double Vertex::getSqDistance(double coords[3])
+{
+	return pow((getXCoord()-coords[0]),2) + pow((getYCoord()-coords[1]),2) +pow((getZCoord()-coords[2]),2);
+}
+
 bool Vertex::sameAs(Vertex& v)
 {
 	return(getXCoord()==v.getXCoord() && getYCoord()==v.getYCoord() && getZCoord()==v.getZCoord());
@@ -155,22 +160,22 @@ Vertex** Edge::getVertex()
 	return vertices;
 }
 
-bool Edge::testCircumCircle(Vertex& v, double centerRadius[4])
+bool Edge::testCircumCircle(deque<Vertex>::pointer v, double centerRadius[4])
 {
 	double sideaSq, sidebSq, sidecSq;
-	if(vertices[0]->sameAs(v))
+	if(vertices[0]->getId() == v->getId())
 		return false;
-	if(vertices[0]->sameAs(v))
+	if(vertices[1]->getId() == v->getId())
 		return false;
-	sideaSq = vertices[1]->getSqDistance(v);
-	sidebSq = vertices[0]->getSqDistance(v);
+	sideaSq = vertices[1]->getSqDistance(*v);
+	sidebSq = vertices[0]->getSqDistance(*v);
 	sidecSq = vertices[0]->getSqDistance(*vertices[1]);
 	for(int i=0; i<3; i++)
 		centerRadius[i]=((vertices[0]->getCoord((axisToSort)i)*(sideaSq*(sidebSq+sidecSq-sideaSq)))+
 				         (vertices[1]->getCoord((axisToSort)i)*(sidebSq*(sidecSq+sideaSq-sidebSq)))+
-				         (v.getCoord((axisToSort)i)			  *(sidecSq*(sideaSq+sidebSq-sidecSq))))
+				         (v->getCoord((axisToSort)i)			  *(sidecSq*(sideaSq+sidebSq-sidecSq))))
 				        /(2*(sideaSq*sidebSq+sidebSq*sidecSq+sidecSq*sideaSq)-(sideaSq*sideaSq+sidebSq*sidebSq+sidecSq*sidecSq));
-	centerRadius[3]=sqrt(pow((v.getXCoord()-centerRadius[0]),2) + pow((v.getYCoord()-centerRadius[1]),2) +pow((v.getZCoord()-centerRadius[2]),2));
+	centerRadius[3]=sqrt(pow((v->getXCoord()-centerRadius[0]),2) + pow((v->getYCoord()-centerRadius[1]),2) +pow((v->getZCoord()-centerRadius[2]),2));
 	return true;
 }
 ///Plc Edge class
@@ -182,6 +187,8 @@ PlcEdge::PlcEdge(Vertex *vertex1, Vertex *vertex2)
 }
 
 ///Face class
+
+Face::Face():cell1(NULL),cell2(NULL),oppositeVertex1(NULL),oppositeVertex2(NULL){}
 
 void Face::setId(string vid)
 {
@@ -497,7 +504,7 @@ deque<deque<Face>::pointer>& Cell::getFaces()
 //	return neighbours;
 //}
 
-bool Cell::testCircumCircle(Vertex& v, double centerRadius[4])
+bool Cell::testCircumCircle(deque<Vertex>::pointer v, double centerRadius[4])
 {
 	return edges[0]->testCircumCircle(v,centerRadius);
 }
@@ -625,74 +632,77 @@ void Solid::delaunize()
 	deque<Vertex> vertices;
 	deque<Vertex>::iterator vit;
 	map<string,deque<Face>::pointer> afl;
-	deque<deque<deque<deque<deque<Vertex>::pointer > > > > grid;
-	double minx=0.0, miny=0.0, minz=0.0, maxx=0.0, maxy=0.0,maxz=0.0;
-	for(vit=listOfVertices.begin(); vit!=listOfVertices.end(); vit++)
-	{
-		if(vit==listOfVertices.begin())
-		{
-			minx=vit->getXCoord();
-			miny=vit->getYCoord();
-			minz=vit->getZCoord();
-			maxx=vit->getXCoord();
-			maxy=vit->getYCoord();
-			maxz=vit->getZCoord();
-		}
-		else
-		{
-			if(vit->getXCoord()<minx)
-				minx=vit->getXCoord();
-			if(vit->getYCoord()<miny)
-				miny=vit->getYCoord();
-			if(vit->getZCoord()<minz)
-				minz=vit->getZCoord();
-			if(vit->getXCoord()>maxx)
-				maxx=vit->getXCoord();
-			if(vit->getYCoord()>maxy)
-				maxy=vit->getYCoord();
-			if(vit->getZCoord()>maxz)
-				maxz=vit->getZCoord();
-		}
-	}
-	int xrange,yrange,zrange;
-	double stepSize;
-	stepSize=1.0/10.0;
-	xrange = 1+(floor(maxx/stepSize)-floor(minx/stepSize));	yrange=1+(floor(maxy/stepSize)-floor(miny/stepSize)); zrange=1+(floor(maxz/stepSize)-floor(minz/stepSize));
-	grid.resize(xrange);
-	for(int i=0;i<xrange;i++)
-	{
-		grid[i].resize(yrange);
-	}
-	for(int i=0;i<xrange;i++)
-		for(int j=0; j<yrange; j++)
-			{
-				grid[i][j].resize(zrange);
-			}
-	//cout<<grid.size();
-	//cout.flush();
-	// map points to the grid
-	//int i;
-	int *gridcoords;
-	for(unsigned int i=0; i<listOfVertices.size();i++)
-	{
-		//int gridCoords[3];
-		gridcoords= (int*)malloc(sizeof(int)*4);
-		gridcoords[0]=(int)(listOfVertices[i].getXCoord()/stepSize-floor(minx/stepSize));
-		gridcoords[1]=(int)(listOfVertices[i].getYCoord()/stepSize-floor(miny/stepSize));
-		gridcoords[2]=(int)(listOfVertices[i].getZCoord()/stepSize-floor(minz/stepSize));
-		grid[gridcoords[0]][gridcoords[1]][gridcoords[2]].push_back(&listOfVertices[i]);
-		gridcoords[3]= grid[gridcoords[0]][gridcoords[1]][gridcoords[2]].size()-1;
-		listOfVertices[i].sparePtr=(int*)gridcoords;
-		vertices.push_back(listOfVertices[i]);
-	}
-	for(int i=0; i<grid.size(); i++)
-		for(int j=0; j<grid[i].size(); j++)
-			for(int k=0; k<grid[i][j].size(); k++)
-				if(grid[i][j][k].size())
-					cout<<"good coord:"<<i<<","<<j<<","<<k<<endl;
-	cout.flush();
-	sort(vertices.begin(),vertices.end(),sortVertexX);
-	dewall(X, vertices, afl, grid);
+//	deque<deque<deque<deque<deque<Vertex>::pointer > > > > grid;
+	kdtree *kdTree = new kdtree();
+	kdTree->buildTree(listOfVertices);
+//	double minx=0.0, miny=0.0, minz=0.0, maxx=0.0, maxy=0.0,maxz=0.0;
+//	for(vit=listOfVertices.begin(); vit!=listOfVertices.end(); vit++)
+//	{
+//		if(vit==listOfVertices.begin())
+//		{
+//			minx=vit->getXCoord();
+//			miny=vit->getYCoord();
+//			minz=vit->getZCoord();
+//			maxx=vit->getXCoord();
+//			maxy=vit->getYCoord();
+//			maxz=vit->getZCoord();
+//		}
+//		else
+//		{
+//			if(vit->getXCoord()<minx)
+//				minx=vit->getXCoord();
+//			if(vit->getYCoord()<miny)
+//				miny=vit->getYCoord();
+//			if(vit->getZCoord()<minz)
+//				minz=vit->getZCoord();
+//			if(vit->getXCoord()>maxx)
+//				maxx=vit->getXCoord();
+//			if(vit->getYCoord()>maxy)
+//				maxy=vit->getYCoord();
+//			if(vit->getZCoord()>maxz)
+//				maxz=vit->getZCoord();
+//		}
+//	}
+//	int xrange,yrange,zrange;
+//	double stepSize;
+//	stepSize=1.0/10.0;
+//	xrange = 1+(floor(maxx/stepSize)-floor(minx/stepSize));	yrange=1+(floor(maxy/stepSize)-floor(miny/stepSize)); zrange=1+(floor(maxz/stepSize)-floor(minz/stepSize));
+//	grid.resize(xrange);
+//	for(int i=0;i<xrange;i++)
+//	{
+//		grid[i].resize(yrange);
+//	}
+//	for(int i=0;i<xrange;i++)
+//		for(int j=0; j<yrange; j++)
+//			{
+//				grid[i][j].resize(zrange);
+//			}
+//	//cout<<grid.size();
+//	//cout.flush();
+//	// map points to the grid
+//	//int i;
+//	int *gridcoords;
+//	for(unsigned int i=0; i<listOfVertices.size();i++)
+//	{
+//		//int gridCoords[3];
+//		gridcoords= (int*)malloc(sizeof(int)*4);
+//		gridcoords[0]=(int)(listOfVertices[i].getXCoord()/stepSize-floor(minx/stepSize));
+//		gridcoords[1]=(int)(listOfVertices[i].getYCoord()/stepSize-floor(miny/stepSize));
+//		gridcoords[2]=(int)(listOfVertices[i].getZCoord()/stepSize-floor(minz/stepSize));
+//		grid[gridcoords[0]][gridcoords[1]][gridcoords[2]].push_back(&listOfVertices[i]);
+//		gridcoords[3]= grid[gridcoords[0]][gridcoords[1]][gridcoords[2]].size()-1;
+//		listOfVertices[i].sparePtr=(int*)gridcoords;
+//		vertices.push_back(listOfVertices[i]);
+//	}
+//	for(int i=0; i<grid.size(); i++)
+//		for(int j=0; j<grid[i].size(); j++)
+//			for(int k=0; k<grid[i][j].size(); k++)
+//				if(grid[i][j][k].size())
+//					cout<<"good coord:"<<i<<","<<j<<","<<k<<endl;
+//	cout.flush();
+	//sort(vertices.begin(),vertices.end(),sortVertexX);
+	//dewall(X, vertices, afl, grid);
+	dewall(afl,kdTree);
 }
 
 void Solid::drawEdges()
@@ -700,7 +710,7 @@ void Solid::drawEdges()
 	deque<deque<Edge>::pointer>::iterator eit;
 	//deque<deque<Face>::pointer>::iterator fit;
 	deque<Vertex>::iterator vit;
-	double resolution=0.1;
+	double resolution=.10;
 //	for(int i=0; i<faceToShow; i++)
 //	{
 //		glPushMatrix();
@@ -734,7 +744,7 @@ void Solid::drawEdges()
 		glPushMatrix();
 		glColor4f(0.0,1.0,0.0,1.0);
 		glTranslated(vit->getXCoord()/resolution, vit->getYCoord()/resolution, vit->getZCoord()/resolution);
-		glutSolidSphere(0.05,10,10);
+		glutSolidSphere(0.005,10,10);
 		glPopMatrix();
 	}
 	for(int i=firstCell; i<lastCell; i++)
@@ -752,13 +762,29 @@ void Solid::drawEdges()
 		if(showCircle)
 		{
 			center=listOfCells[i].getCircumCenter();
-			glPushMatrix();
-			glTranslated(center[0]/resolution,center[1]/resolution,center[2]/resolution);
-			if(wire)
-				glutWireSphere(listOfCells[i].getCircumRadius()/resolution,40,40);
+			if(listOfCells[i].getVertexListSize()==4)
+			{
+				glPushMatrix();
+				glTranslated(center[0]/resolution,center[1]/resolution,center[2]/resolution);
+				if(wire)
+					glutWireSphere(listOfCells[i].getCircumRadius()/resolution,40,40);
+				else
+					glutSolidSphere(listOfCells[i].getCircumRadius()/resolution,40,40);
+				glPopMatrix();
+			}
 			else
-				glutSolidSphere(listOfCells[i].getCircumRadius()/resolution,40,40);
-			glPopMatrix();
+			{
+				glPushMatrix();
+				glBegin(GL_LINE_LOOP);
+				glTranslated(center[0]/resolution,center[1]/resolution,center[2]/resolution);
+				for (int ic=0; ic < 360; ic++)
+				{
+					double degInRad = ic*(3.14159/180);
+					glVertex3d(cos(degInRad)*(listOfCells[i].getCircumRadius()/resolution),center[1],sin(degInRad)*(listOfCells[i].getCircumRadius()/resolution));
+				}
+				glEnd();
+				glPopMatrix();
+			}
 		}
 	}
 }

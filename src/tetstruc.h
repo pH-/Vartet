@@ -12,6 +12,7 @@ using namespace std;
 class Face;
 class Solid;
 class Cell;
+class kdtree;
 
 class Coordinates	{
 public:
@@ -34,6 +35,7 @@ public:
 	double getZCoord();
 	double getCoord(axisToSort);
 	double getSqDistance(Vertex&);
+	double getSqDistance(double[3]);
 	bool   sameAs(Vertex&);
 //	void   setOppFace(deque<Face>::pointer);
 	void   incrNumOfOpenFaces();
@@ -63,7 +65,7 @@ public:
 	Edge(){};
 	void setVertices(deque<Vertex>::pointer, deque<Vertex>::pointer);
 	Vertex** getVertex();
-	bool testCircumCircle(Vertex&, double[4]);
+	bool testCircumCircle(deque<Vertex>::pointer, double[4]);
 private:
 	vector<Vertex>::pointer vertices[2];
 };
@@ -78,6 +80,7 @@ private:
 
 class Face	{
 public:
+	Face();
 	void setId(string);
 	string getId();
 	void addVertices(deque<Vertex>::pointer, deque<Vertex>::pointer, deque<Vertex>::pointer);
@@ -147,7 +150,7 @@ public:
 	deque<deque<Edge>::pointer>& getEdges();
 	deque<deque<Face>::pointer>& getFaces();
 	//multimap<deque<Cell>::pointer, deque<Face>::pointer>& getNeighbours();
-	bool testCircumCircle(Vertex&,double[4]);
+	bool testCircumCircle(deque<Vertex>::pointer,double[4]);
 	trippleBool testCircumSphere(Vertex&,double[4]);
 	void addFEVs(deque<Face>::pointer);
 	void delFEVs(deque<Face>::pointer);
@@ -172,9 +175,10 @@ public:
 	void populateVertices(deque<Vertex>&);
 	void delaunize();
 	//void sortVertices(axisToSort, deque<Vertex>, deque<Vertex>);
-	void dewall(axisToSort,deque<Vertex>&,map<string,deque<Face>::pointer>&, deque<deque<deque<deque<deque<Vertex>::pointer > > > >&);
+	//void dewall(axisToSort,deque<Vertex>&,map<string,deque<Face>::pointer>&, deque<deque<deque<deque<deque<Vertex>::pointer > > > >&);
+	void dewall(map<string,deque<Face>::pointer>&, kdtree*);
 	void *sparePtr;                                          // a pointer to be used for temporary extension of a Solid object.
-	bool makeCell(deque<Cell>::reference, deque<deque<deque<deque<deque<Vertex>::pointer > > > >&, double);
+	bool makeCell(deque<Cell>::reference, kdtree*, double);
 	void drawEdges();
 	int  listOfCellsSize();
 protected:

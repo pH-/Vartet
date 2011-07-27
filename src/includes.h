@@ -44,6 +44,7 @@ enum trippleBool{ false_val, true_val, midstate_val};
 #define STEPSIZE 0.1
 
 #include "tetstruc.h"
+#include "kdtree.h"
 
 #define CROSS(O,A,B)		 {(O)[0] = (A)[1]*(B)[2]-(A)[2]*(B)[1]; \
 							  (O)[1] = (A)[2]*(B)[0]-(A)[0]*(B)[2]; \
