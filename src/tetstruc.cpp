@@ -188,7 +188,7 @@ PlcEdge::PlcEdge(Vertex *vertex1, Vertex *vertex2)
 
 ///Face class
 
-Face::Face():cell1(NULL),cell2(NULL),oppositeVertex1(NULL),oppositeVertex2(NULL){}
+Face::Face():oppositeVertex1(NULL),oppositeVertex2(NULL),cell1(NULL),cell2(NULL){}
 
 void Face::setId(string vid)
 {
@@ -518,19 +518,22 @@ trippleBool Cell::testCircumSphere(Vertex& v, double centerRadius[4])
 		{
 			if(faces.back()->getOppositeVertex1())
 			{
-				if(faces.back()->getOppositeVertex1()->getSqDistance(ctr)<centerRadius[3]*centerRadius[3])
-					return false_val;
-				if(faces.back()->getOppositeVertex1()->getSqDistance(ctr)==centerRadius[3]*centerRadius[3])
+				if(faces.back()->getOppositeVertex1()->getSqDistance(ctr)<=centerRadius[3]*centerRadius[3])
+//					return false_val;
 					return midstate_val;
+//				if(faces.back()->getOppositeVertex1()->getSqDistance(ctr)==centerRadius[3]*centerRadius[3])
+//					return midstate_val;
 			}
 			else
 			{
-				if(faces.back()->getOppositeVertex2()->getSqDistance(ctr)<centerRadius[3]*centerRadius[3])
-					return false_val;
-				if(faces.back()->getOppositeVertex2()->getSqDistance(ctr)==centerRadius[3]*centerRadius[3])
+				if(faces.back()->getOppositeVertex2()->getSqDistance(ctr)<=centerRadius[3]*centerRadius[3])
+//					return false_val;
 					return midstate_val;
+//				if(faces.back()->getOppositeVertex2()->getSqDistance(ctr)==centerRadius[3]*centerRadius[3])
+//					return midstate_val;
 			}
-			if(!this->checkOrientation(ctr))
+			//if(!this->checkOrientation(ctr))
+			if(!this->checkOrientationAdaptive(ctr))
 			{
 				centerRadius[3]*=-1;
 			}
@@ -567,9 +570,6 @@ bool Cell::checkOrientation(Vertex& v2)
 	double matrixp1[3][3];
 	double matrixp2[3][3];
 	Vertex *oppVertex;
-	multimap<deque<Cell>::pointer, deque<Face>::pointer>::iterator niter;
-	//niter = neighbours.begin();
-	//cout<<"Opp v: "<<(*((*niter).first->getNeighbours().find(this))).second->getOppositeVertex()->getXCoord()<<endl;
 	if(faces.back()->getNeighCell1()==this)
 		oppVertex=faces.back()->getOppositeVertex2();
 	else if(faces.back()->getNeighCell2()==this)
@@ -583,6 +583,34 @@ bool Cell::checkOrientation(Vertex& v2)
 			matrixp1[i][j] = (faces.back()->getVertices()[i]->getCoord((axisToSort)j)) - (v2.getCoord((axisToSort)j));
 		}
 	if(determinant3x3(matrixp1) * determinant3x3(matrixp2)<0)
+		return true;
+	else
+		return false;
+}
+
+bool Cell::checkOrientationAdaptive(Vertex& v2)
+{
+	Vertex *oppVertex;
+	if(faces.back()->getNeighCell1()==this)
+		oppVertex=faces.back()->getOppositeVertex2();
+	else if(faces.back()->getNeighCell2()==this)
+		oppVertex=faces.back()->getOppositeVertex1();
+	else
+		cout<<"ERROR ERROR::"<<endl;
+	double p[3][3], d1[3], d2[3];
+	for(int i=0; i<3; i++)
+	{
+		for(int j=0; j<3; j++)
+		{
+			p[i][j] = faces.back()->getVertices()[i]->getCoord((axisToSort)j);
+		}
+	}
+	for(int i=0;i<3; i++)
+	{
+		d1[i] = v2.getCoord((axisToSort)i);
+		d2[i] = oppVertex->getCoord((axisToSort)i);
+	}
+	if(orient3d(p[0],p[1],p[2],d1)*orient3d(p[0],p[1],p[2],d2)<0)
 		return true;
 	else
 		return false;
@@ -632,77 +660,9 @@ void Solid::delaunize()
 	deque<Vertex> vertices;
 	deque<Vertex>::iterator vit;
 	map<string,deque<Face>::pointer> afl;
-//	deque<deque<deque<deque<deque<Vertex>::pointer > > > > grid;
 	kdtree *kdTree = new kdtree();
 	kdTree->buildTree(listOfVertices);
-//	double minx=0.0, miny=0.0, minz=0.0, maxx=0.0, maxy=0.0,maxz=0.0;
-//	for(vit=listOfVertices.begin(); vit!=listOfVertices.end(); vit++)
-//	{
-//		if(vit==listOfVertices.begin())
-//		{
-//			minx=vit->getXCoord();
-//			miny=vit->getYCoord();
-//			minz=vit->getZCoord();
-//			maxx=vit->getXCoord();
-//			maxy=vit->getYCoord();
-//			maxz=vit->getZCoord();
-//		}
-//		else
-//		{
-//			if(vit->getXCoord()<minx)
-//				minx=vit->getXCoord();
-//			if(vit->getYCoord()<miny)
-//				miny=vit->getYCoord();
-//			if(vit->getZCoord()<minz)
-//				minz=vit->getZCoord();
-//			if(vit->getXCoord()>maxx)
-//				maxx=vit->getXCoord();
-//			if(vit->getYCoord()>maxy)
-//				maxy=vit->getYCoord();
-//			if(vit->getZCoord()>maxz)
-//				maxz=vit->getZCoord();
-//		}
-//	}
-//	int xrange,yrange,zrange;
-//	double stepSize;
-//	stepSize=1.0/10.0;
-//	xrange = 1+(floor(maxx/stepSize)-floor(minx/stepSize));	yrange=1+(floor(maxy/stepSize)-floor(miny/stepSize)); zrange=1+(floor(maxz/stepSize)-floor(minz/stepSize));
-//	grid.resize(xrange);
-//	for(int i=0;i<xrange;i++)
-//	{
-//		grid[i].resize(yrange);
-//	}
-//	for(int i=0;i<xrange;i++)
-//		for(int j=0; j<yrange; j++)
-//			{
-//				grid[i][j].resize(zrange);
-//			}
-//	//cout<<grid.size();
-//	//cout.flush();
-//	// map points to the grid
-//	//int i;
-//	int *gridcoords;
-//	for(unsigned int i=0; i<listOfVertices.size();i++)
-//	{
-//		//int gridCoords[3];
-//		gridcoords= (int*)malloc(sizeof(int)*4);
-//		gridcoords[0]=(int)(listOfVertices[i].getXCoord()/stepSize-floor(minx/stepSize));
-//		gridcoords[1]=(int)(listOfVertices[i].getYCoord()/stepSize-floor(miny/stepSize));
-//		gridcoords[2]=(int)(listOfVertices[i].getZCoord()/stepSize-floor(minz/stepSize));
-//		grid[gridcoords[0]][gridcoords[1]][gridcoords[2]].push_back(&listOfVertices[i]);
-//		gridcoords[3]= grid[gridcoords[0]][gridcoords[1]][gridcoords[2]].size()-1;
-//		listOfVertices[i].sparePtr=(int*)gridcoords;
-//		vertices.push_back(listOfVertices[i]);
-//	}
-//	for(int i=0; i<grid.size(); i++)
-//		for(int j=0; j<grid[i].size(); j++)
-//			for(int k=0; k<grid[i][j].size(); k++)
-//				if(grid[i][j][k].size())
-//					cout<<"good coord:"<<i<<","<<j<<","<<k<<endl;
-//	cout.flush();
-	//sort(vertices.begin(),vertices.end(),sortVertexX);
-	//dewall(X, vertices, afl, grid);
-	dewall(afl,kdTree);
+	dewall(afl,kdTree,kdTree);
 }
 
 void Solid::drawEdges()
@@ -710,7 +670,7 @@ void Solid::drawEdges()
 	deque<deque<Edge>::pointer>::iterator eit;
 	//deque<deque<Face>::pointer>::iterator fit;
 	deque<Vertex>::iterator vit;
-	double resolution=.10;
+	double resolution=1.0;
 //	for(int i=0; i<faceToShow; i++)
 //	{
 //		glPushMatrix();
@@ -744,7 +704,7 @@ void Solid::drawEdges()
 		glPushMatrix();
 		glColor4f(0.0,1.0,0.0,1.0);
 		glTranslated(vit->getXCoord()/resolution, vit->getYCoord()/resolution, vit->getZCoord()/resolution);
-		glutSolidSphere(0.005,10,10);
+		glutSolidSphere(0.05,10,10);
 		glPopMatrix();
 	}
 	for(int i=firstCell; i<lastCell; i++)
@@ -793,20 +753,6 @@ int Solid::listOfCellsSize()
 {
 	return listOfCells.size();
 }
-/*
-void Solid::sortVertices(Solid::axisToSort axis, deque<Vertex> inList, deque<Vertex> outList)
-{
-	for(int i=0; i<inList.size(); i++)
-		cout<<inList[i].getXCoord()<<",";
-	cout.flush();
-	cout<<endl<<"Sorted List"<<endl;
-	sort(inList.begin(),inList.end(),sortVertexX);
-	for(int i=0; i<inList.size(); i++)
-		cout<<inList[i].getXCoord()<<",";
-	cout.flush();
-}*/
-
-
 
 /// Plc class
 

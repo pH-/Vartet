@@ -165,7 +165,7 @@ void keyboard(unsigned char key, int x, int y)
 			glutPostRedisplay();
 			break;
 		case '3':
-			faceToShow=(faceToShow+1)%11;
+			faceToShow=(faceToShow+1)%54;
 			glutPostRedisplay();
 			break;
 		case 'c':
@@ -218,6 +218,7 @@ int main (int argc, char** argv)
 	cout<<argv[1];
 	inputModel.parsePolyFile(argv[1]);
 	model.populateVertices(inputModel.getPlcVertices());
+	exactinit();
 	model.delaunize();
 	glutInit(&argc,argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);

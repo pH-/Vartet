@@ -155,6 +155,7 @@ public:
 	void addFEVs(deque<Face>::pointer);
 	void delFEVs(deque<Face>::pointer);
 	bool checkOrientation(Vertex&);
+	bool checkOrientationAdaptive(Vertex&);
 	void setCircumCenter(double[3]);
 	void setCircumRadius(double);
 	double getCircumRadius();
@@ -176,9 +177,9 @@ public:
 	void delaunize();
 	//void sortVertices(axisToSort, deque<Vertex>, deque<Vertex>);
 	//void dewall(axisToSort,deque<Vertex>&,map<string,deque<Face>::pointer>&, deque<deque<deque<deque<deque<Vertex>::pointer > > > >&);
-	void dewall(map<string,deque<Face>::pointer>&, kdtree*);
+	void dewall(map<string,deque<Face>::pointer>&, kdtree*, kdtree*);
 	void *sparePtr;                                          // a pointer to be used for temporary extension of a Solid object.
-	bool makeCell(deque<Cell>::reference, kdtree*, double);
+	bool makeCell(deque<Cell>::reference, kdtree*, kdtree*, double);
 	void drawEdges();
 	int  listOfCellsSize();
 protected:

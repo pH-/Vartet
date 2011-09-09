@@ -23,9 +23,9 @@ bool wire=false;
 //};
 
 //void Solid::dewall(axisToSort axis, deque<Vertex>& vertices, map<string,deque<Face>::pointer>& activeFaceList, deque<deque<deque<deque<deque<Vertex>::pointer > > > >& grid)
-void Solid::dewall(map<string,deque<Face>::pointer>& activeFaceList, kdtree *kdTree)
+void Solid::dewall(map<string,deque<Face>::pointer>& activeFaceList, kdtree *kdTree, kdtree *treeRoot)
 {
-	bool jump=false;
+	bool jump=true;
 	//int medianIndex = vertices.size() / 2, i = 0;
 	double alphaPlane=0;
 	map<string,deque<Face>::pointer> aflalpha;
@@ -46,19 +46,23 @@ void Solid::dewall(map<string,deque<Face>::pointer>& activeFaceList, kdtree *kdT
 //		alphaPlane = floor(vertices[medianIndex+1].getCoord(axis));
 //	else
 //		alphaPlane = vertices[medianIndex+1].getCoord(axis) + ((vertices[medianIndex+1].getCoord(axis) - vertices[medianIndex].getCoord(axis))/2);
-//	cout<<"alpha Plane:"<<alphaPlane<<endl;
 	alphaPlane = kdTree->getRoot()->getKeyValue();
+	cout<<"alpha Plane:"<<kdTree->getRoot()->getaxis()<<"->"<<alphaPlane<<endl;
 	if (activeFaceList.size() == 0)
 	{
-		int findFirstVertex=0;
+//		int findFirstVertex=0;
 		newCell = new Cell();
 		if (newCell->getVertexListSize() <=4) {
 			newCell->addVertex(kdTree->getRoot()->getPtObject());
 		}
 		listOfCells.push_back(*newCell);
-		makeCell(listOfCells.back(),kdTree, alphaPlane);
-		cout<<"next dimension"<<endl;
-		makeCell(listOfCells.back(),kdTree, alphaPlane);
+		makeCell(listOfCells.back(),kdTree, treeRoot, alphaPlane);
+		if(floor(alphaPlane)==-12)
+		{
+			cout<<"need to break";
+			cout.flush();
+		}
+		makeCell(listOfCells.back(),kdTree, treeRoot, alphaPlane);
 
 //		while(!makeCell(listOfCells.back(),kdTree, alphaPlane))
 //		{
@@ -83,148 +87,189 @@ void Solid::dewall(map<string,deque<Face>::pointer>& activeFaceList, kdtree *kdT
 ////		cout.flush();
 //		cout<<"killer"<<medianIndex-findFirstVertex<<endl;
 //		cout<<"out here"<<endl;
-//		for(int i=0; i<4;i++)
-//		{
-//			if((listOfCells.back().getFaces()[i]->getVertices()[0]->getXCoord())<alphaPlane
-//			&& (listOfCells.back().getFaces()[i]->getVertices()[1]->getXCoord())<alphaPlane
-//			&& (listOfCells.back().getFaces()[i]->getVertices()[2]->getXCoord())<alphaPlane)
-//			{
-//				afllow.insert(pair<string,deque<Face>::pointer>(listOfCells.back().getFaces()[i]->getId(), listOfCells.back().getFaces()[i]));
-//			}
-//			else if((listOfCells.back().getFaces()[i]->getVertices()[0]->getXCoord())>alphaPlane
-//				 && (listOfCells.back().getFaces()[i]->getVertices()[1]->getXCoord())>alphaPlane
-//				 && (listOfCells.back().getFaces()[i]->getVertices()[2]->getXCoord())>alphaPlane)
-//			{
-//				aflhigh.insert(pair<string,deque<Face>::pointer>(listOfCells.back().getFaces()[i]->getId(), listOfCells.back().getFaces()[i]));
-//			}
-//			else
-//				aflalpha.insert(pair<string,deque<Face>::pointer>(listOfCells.back().getFaces()[i]->getId(), listOfCells.back().getFaces()[i]));
-//		}
-//		cout<<endl<<"current cellid:"<<listOfCells.back().getId()<<endl;
-////		cout.flush();
-//	}
-//	while(aflalpha.size())
-//	{
-//		cout<<"Size of aflalpha:"<<aflalpha.size()<<endl;
-////		cout<<"Size of cell list:"<<listOfCells.size()<<endl;
-////		for(map<string,deque<Face>::pointer>::iterator it=aflalpha.begin(); it!=aflalpha.end(); it++)
-////			cout<<"aflalpha contents:"<<(*it).first<<","<<(*it).second<<endl;
-////		cout.flush();
-//		map<string,deque<Face>::pointer>::iterator aflit;
-//		map<string,deque<Face>::pointer>::iterator delfaceit;
-//		multimap<deque<Cell>::pointer, deque<Face>::pointer>::iterator niter;
-//		deque<deque<Face>::pointer>::iterator faceiter;
-//		for(aflit=aflalpha.begin(); aflit!=aflalpha.end(); )
-//		{
-//			if(!(*aflit).first.compare("20,36,93"))
-//			{
-//				cout<<"in trouble";
-//				goto allend;
-//			}
-//			if(!(*aflit).second->getNumOfOpenFaces())
-//			{
-//				aflalpha.erase(aflit++);
-//				continue;
-//			}
-//			if((*aflit).second->getNeighCell1() && (*aflit).second->getNeighCell2())
-//			{
-//				aflalpha.erase(aflit++);
-//				continue;
-//			}
-//			newCell = new Cell();
-//			listOfCells.push_back(*newCell);
-//			cout<<"current afl entry:"<<(*aflit).first<<endl;
-//			listOfCells.back().addFEVs((*aflit).second);
-////			cout<<"size of cell list:"<<listOfCells.size()<<endl;
-//			cout.flush();
-//			if(makeCell(listOfCells.back(),kdTree,alphaPlane))
-//			{
-//				//cout<<"current cellid:"<<listOfCells.back().getId()<<endl;
-////				if(listOfCells.back().getId()=="17,19,33,40")
-////					cout<<"break here"<<endl;
-//				cout<<"faces generated  ";
-//				for(faceiter=listOfCells.back().getFaces().begin(); faceiter!=listOfCells.back().getFaces().end(); faceiter++)
-//				{
-//					cout<<":"<<(*faceiter)->getId();
-//					delfaceit = aflalpha.find((*faceiter)->getId());
-//					if(delfaceit!=aflalpha.end())
-//					{
-//						aflit++;
-//						//cout<<"face to delete"<<(*delfaceit).second->getId()<<endl;
-//						aflalpha.erase(delfaceit);
-//					}
-//					else if((*faceiter)->getNeighCell1() && (*faceiter)->getNeighCell2())
-//						continue;
-//					else if(((*faceiter)->getVertices()[0]->getCoord(axis))<alphaPlane
-//							&& ((*faceiter)->getVertices()[1]->getCoord(axis))<alphaPlane
-//							&& ((*faceiter)->getVertices()[2]->getCoord(axis))<alphaPlane)
-//					{
-//						afllow.insert(pair<string,deque<Face>::pointer>((*faceiter)->getId(), *faceiter));
-//					}
-//					else if(((*faceiter)->getVertices()[0]->getCoord(axis))>alphaPlane
-//							&& ((*faceiter)->getVertices()[1]->getCoord(axis))>alphaPlane
-//							&& ((*faceiter)->getVertices()[2]->getCoord(axis))>alphaPlane)
-//					{
-//						aflhigh.insert(pair<string,deque<Face>::pointer>((*faceiter)->getId(),*faceiter));
-//					}
-//					else
-//						aflalpha.insert(pair<string,deque<Face>::pointer>((*faceiter)->getId(),*faceiter));
-//				}
-//				cout<<endl;
-//			}
-//			else
-//			{
-//				listOfCells.back().delFEVs((*aflit).second);
-//				listOfCells.pop_back();
-//				cout<<"Size of cell list after subtraction:"<<listOfCells.size()<<endl;
-//				aflalpha.erase(aflit++);
-//			}
-//			cout.flush();
-//		}
-//		cout<<"alpha size:"<<aflalpha.size()<<endl;
-		//cout<<"Number of cells"<<listOfCells.size()<<endl;
-		//cout<<"Number of faces"<<listOfFaces.size()<<endl;
-//		map<string,deque<Face>::pointer>::iterator fmapit;
-//		for(unsigned int i=0; i<listOfCells.size(); i++)
-//		{
-//			if(listOfCells[i].getVertexListSize()==3)
-//				makeCell(listOfCells[i],grid, alphaPlane);
-//		}
+		if(listOfCells.back().getFaceListSize()==4)
+		{
+			for(int i=0; i<4; i++)
+				activeFaceList.insert(pair<string,deque<Face>::pointer>(listOfCells.back().getFaces()[i]->getId(), listOfCells.back().getFaces()[i]));
+			cout<<endl<<"current cellid:"<<listOfCells.back().getId()<<endl;
+			cout.flush();
+		}
+		else
+		{
+			cout<<"chk out for erroneous triangles";
+			cout.flush();
+		}
 	}
-//allend:
-//	cout<<"aflalphalist:"<<aflalpha.size()<<endl;
-//	cout<<"afllowlist:"<<afllow.size()<<endl;
-//	cout<<"aflhighlist:"<<aflhigh.size()<<endl;
-//	cout<<"verticesLow:"<<verticesLow.size()<<endl;
-//	cout<<"verticesHigh:"<<verticesHigh.size()<<endl;
-//	cout.flush();
-//	if(jump && verticesLow.size())
-//	{
-//		dewall((axisToSort)((axis+1)%3), verticesLow, afllow, grid);
-//	}
-//	if(jump && verticesHigh.size())
-//	{
-//		dewall((axisToSort)((axis+1)%3), verticesHigh, aflhigh, grid);
-//	}
+	if(activeFaceList.size())
+	{
+		map<string,deque<Face>::pointer>::iterator afiter;
+		for(afiter=activeFaceList.begin(); afiter!=activeFaceList.end(); afiter++)
+		{
+			if((*afiter).second->getVertices()[0]->getCoord((axisToSort)kdTree->getRoot()->getaxis())<=alphaPlane
+			&& (*afiter).second->getVertices()[1]->getCoord((axisToSort)kdTree->getRoot()->getaxis())<=alphaPlane
+			&& (*afiter).second->getVertices()[2]->getCoord((axisToSort)kdTree->getRoot()->getaxis())<=alphaPlane)
+				afllow.insert(pair<string,deque<Face>::pointer>((*afiter).first, (*afiter).second));
+			else if((*afiter).second->getVertices()[0]->getCoord((axisToSort)kdTree->getRoot()->getaxis())>alphaPlane
+			     && (*afiter).second->getVertices()[1]->getCoord((axisToSort)kdTree->getRoot()->getaxis())>alphaPlane
+			     && (*afiter).second->getVertices()[2]->getCoord((axisToSort)kdTree->getRoot()->getaxis())>alphaPlane)
+				aflhigh.insert(pair<string,deque<Face>::pointer>((*afiter).first, (*afiter).second));
+			else
+				aflalpha.insert(pair<string,deque<Face>::pointer>((*afiter).first, (*afiter).second));
+
+		}
+
+		while(aflalpha.size())
+		{
+			cout<<"Size of aflalpha:"<<aflalpha.size()<<endl;
+			cout.flush();
+			//		cout<<"Size of cell list:"<<listOfCells.size()<<endl;
+			//		for(map<string,deque<Face>::pointer>::iterator it=aflalpha.begin(); it!=aflalpha.end(); it++)
+			//			cout<<"aflalpha contents:"<<(*it).first<<","<<(*it).second<<endl;
+			//		cout.flush();
+			map<string,deque<Face>::pointer>::iterator aflit;
+			map<string,deque<Face>::pointer>::iterator delfaceit;
+			multimap<deque<Cell>::pointer, deque<Face>::pointer>::iterator niter;
+			deque<deque<Face>::pointer>::iterator faceiter;
+//			for(aflit=aflalpha.begin(); aflit!=aflalpha.end(); )
+			while(aflalpha.size())
+			{
+				aflit=aflalpha.begin();
+				if(!(*aflit).first.compare("22,48,50"))
+				{
+					cout<<"in trouble";
+					goto allend;
+				}
+				if(!(*aflit).second->getNumOfOpenFaces())
+				{
+					//aflalpha.erase(aflit++);
+					aflalpha.erase(aflit);
+					continue;
+				}
+				if((*aflit).second->getNeighCell1() && (*aflit).second->getNeighCell2())
+				{
+//					aflalpha.erase(aflit++);
+					aflalpha.erase(aflit);
+					continue;
+				}
+				newCell = new Cell();
+				listOfCells.push_back(*newCell);
+				cout<<"current afl entry:"<<(*aflit).first<<endl;
+				if(!(*aflit).first.compare("14,18,29"))
+					cout<<"chk for error here";
+				if(!(*aflit).first.compare("12,26,52"))
+					cout<<"why chosing 27?"<<endl;
+				cout.flush();
+				listOfCells.back().addFEVs((*aflit).second);
+				//			cout<<"size of cell list:"<<listOfCells.size()<<endl;
+				cout.flush();
+				if(makeCell(listOfCells.back(),kdTree,treeRoot, alphaPlane))
+				{
+					cout<<"current cellid:"<<listOfCells.back().getId()<<endl;
+					//				if(listOfCells.back().getId()=="17,19,33,40")
+					//					cout<<"break here"<<endl;
+					cout<<"faces generated  ";
+					cout.flush();
+					for(faceiter=listOfCells.back().getFaces().begin(); faceiter!=listOfCells.back().getFaces().end(); faceiter++)
+					{
+//						if(!(*faceiter)->getId().compare("12,13,26"))
+//							cout<<"why inserting 12/13/26"<<endl;
+						cout<<":"<<(*faceiter)->getId();
+						cout.flush();
+						delfaceit = aflalpha.find((*faceiter)->getId());
+						if(delfaceit!=aflalpha.end())
+						{
+							aflit++;
+							//cout<<"face to delete"<<(*delfaceit).second->getId()<<endl;
+							aflalpha.erase(delfaceit);
+							printMap(aflalpha);
+						}
+						else if((*faceiter)->getNeighCell1() && (*faceiter)->getNeighCell2())
+							continue;
+						else if(((*faceiter)->getVertices()[0]->getCoord((axisToSort)kdTree->getRoot()->getaxis()))<=alphaPlane
+								&& ((*faceiter)->getVertices()[1]->getCoord((axisToSort)kdTree->getRoot()->getaxis()))<=alphaPlane
+								&& ((*faceiter)->getVertices()[2]->getCoord((axisToSort)kdTree->getRoot()->getaxis()))<=alphaPlane)
+						{
+							afllow.insert(pair<string,deque<Face>::pointer>((*faceiter)->getId(), *faceiter));
+						}
+						else if(((*faceiter)->getVertices()[0]->getCoord((axisToSort)kdTree->getRoot()->getaxis()))>alphaPlane
+								&& ((*faceiter)->getVertices()[1]->getCoord((axisToSort)kdTree->getRoot()->getaxis()))>alphaPlane
+								&& ((*faceiter)->getVertices()[2]->getCoord((axisToSort)kdTree->getRoot()->getaxis()))>alphaPlane)
+						{
+							aflhigh.insert(pair<string,deque<Face>::pointer>((*faceiter)->getId(),*faceiter));
+						}
+						else
+						{
+//							if(!(*faceiter)->getId().compare("12,13,26"))
+//								cout<<"why inserting 12/13/26"<<endl;
+							aflalpha.insert(pair<string,deque<Face>::pointer>((*faceiter)->getId(),*faceiter));
+						}
+					}
+					printMap(aflalpha);
+					cout<<endl;
+				}
+				else
+				{
+					listOfCells.back().delFEVs((*aflit).second);
+					listOfCells.pop_back();
+					cout<<"Size of cell list after subtraction:"<<listOfCells.size()<<endl;
+					aflalpha.erase(aflit++);
+					printMap(aflalpha);
+				}
+				cout.flush();
+			}
+			cout<<"alpha size:"<<aflalpha.size()<<endl;
+			cout<<"Number of cells"<<listOfCells.size()<<endl;
+			cout<<"Number of faces"<<listOfFaces.size()<<endl;
+			map<string,deque<Face>::pointer>::iterator fmapit;
+			//		for(unsigned int i=0; i<listOfCells.size(); i++)
+			//		{
+			//			if(listOfCells[i].getVertexListSize()==3)
+			//				makeCell(listOfCells[i],grid, alphaPlane);
+			//		}
+		}
+	}
+allend:
+	cout<<"aflalphalist:"<<aflalpha.size()<<endl;
+	cout<<"afllowlist:"<<afllow.size()<<endl;
+	cout<<"aflhighlist:"<<aflhigh.size()<<endl;
+	cout.flush();
+//	if(!kdTree->getRoot()->getLeftChild()->getaxis())
+//		return;
+	if(jump && !kdTree->getRoot()->getLeftChild()->isLeaf() )
+	{
+		kdtree *kdsubTree=new kdtree();
+		kdsubTree->setRoot(kdTree->getRoot()->getLeftChild());
+		dewall(afllow, kdsubTree, treeRoot);
+	}
+	cout<<"aflalphalist:"<<aflalpha.size()<<endl;
+	cout<<"afllowlist:"<<afllow.size()<<endl;
+	cout<<"aflhighlist:"<<aflhigh.size()<<endl;
+	cout.flush();
+	if(jump && !kdTree->getRoot()->getRightChild()->isLeaf() )
+	{
+		kdtree *kdsubTree=new kdtree();
+		kdsubTree->setRoot(kdTree->getRoot()->getRightChild());
+		dewall(aflhigh, kdsubTree, treeRoot);
+	}
 
 }
 
-bool Solid::makeCell(deque<Cell>::reference cell, kdtree* kdTree, double alphaPlane)
+bool Solid::makeCell(deque<Cell>::reference cell, kdtree* kdTree, kdtree* treeRoot,  double alphaPlane)
 {
 	Vertex* winnerVertex;
 	int *centerCoords;
 	unsigned int stepSize = 0;
 	centerCoords = (int*)malloc(sizeof(int)*4);
-	unsigned short int layerlimitx=1, layerlimity=1, layerlimitz=1;
-	unsigned short int layerlimitX=1, layerlimitY=1, layerlimitZ=1;
-	bool endSearch=false;
-	int layer=0;
+//	unsigned short int layerlimitx=1, layerlimity=1, layerlimitz=1;
+//	unsigned short int layerlimitX=1, layerlimitY=1, layerlimitZ=1;
+//	bool endSearch=false;
+//	int layer=0;
 	if(cell.getVertexListSize()==1)
 	{
 		winnerVertex=NULL;
 		Edge*	newEdge = NULL;
-		double minSqDist=-1;
-		double tempSqDist=0;
+//		double minSqDist=-1;
+//		double tempSqDist=0;
 		stepSize = 1;
 		centerCoords=(int*)cell.getVertices()[0]->sparePtr;
 		//cout<<endl<<centerCoords[0]<<","<<centerCoords[1]<<","<<centerCoords[2]<<endl;
@@ -253,6 +298,7 @@ bool Solid::makeCell(deque<Cell>::reference cell, kdtree* kdTree, double alphaPl
 		trippleBool tstSphrReturn;
 		double tempRadius;
 		bool   possibleFail=false, endLoop = false;
+		bool expandSearchVolume=true;
 		deque<deque<Vertex>::pointer > candidateVertices;
 		//deque<Vertex>::pointer candidateWinnerVertex;
 		initSearchAreaBox[0][0]= (cell.getVertices()[0]->getXCoord()<cell.getVertices()[1]->getXCoord())?cell.getVertices()[0]->getXCoord():cell.getVertices()[1]->getXCoord();
@@ -272,59 +318,67 @@ bool Solid::makeCell(deque<Cell>::reference cell, kdtree* kdTree, double alphaPl
 		}
 		while(!winnerVertex && !endLoop)
 		{
-			cout<<"list1 size:"<<candidateVertices.size()<<endl;
+			//cout<<"list1 size:"<<candidateVertices.size()<<endl;
 			kdTree->searchNodes(candidateVertices,kdTree->getRoot(),initSearchAreaBox);
-			cout<<"list1 size:"<<candidateVertices.size()<<endl;
+			//cout<<"list1 size:"<<candidateVertices.size()<<endl;
+			if(kdTree->getRoot()->getsubTreeSize()==candidateVertices.size())
+				expandSearchVolume = false;
 			cout.flush();
 			if(candidateVertices.size())
 			{
 				for(unsigned int i=0; i<candidateVertices.size() && !endLoop; i++)
 				{
-					cout<<"\ttested vertex"<<candidateVertices[i]->getId()<<endl;
-					if(cell.getNeighListSize()>0 && !cell.checkOrientation(*candidateVertices[i]))
+					//cout<<"\ttested vertex"<<candidateVertices[i]->getId()<<endl;
+//					if(cell.getNeighListSize()>0 && !cell.checkOrientation(*candidateVertices[i]))
+					if(cell.getNeighListSize()>0 && !cell.checkOrientationAdaptive(*candidateVertices[i]))
 						continue;
-					cout<<"cell vertices:"<<cell.getVertexListSize()<<endl;
+//					cout<<"cell vertices:"<<cell.getVertexListSize()<<endl;
+//					cout.flush();
 					if(((cell.getVertexListSize()==2) && cell.testCircumCircle(candidateVertices[i],centerRadius))
 					|| ((cell.getVertexListSize()==3) && cell.testCircumSphere(*candidateVertices[i],centerRadius)==true_val))
 					{
-						cout<<"possible radius..................:"<<centerRadius[3]<<endl;
+//						cout<<"possible radius..................:"<<centerRadius[3]<<endl;
 						if(!minRadius)
 						{
 							minRadius=centerRadius[3];
 							winnerVertex=candidateVertices[i];
-							cout<<"possible radius:"<<centerRadius[3]<<endl;
+//							cout<<"possible radius:"<<centerRadius[3]<<endl;
 							cell.setCircumCenter(centerRadius);
 							cell.setCircumRadius((centerRadius[3]>0)?centerRadius[3]:centerRadius[3]*-1);
 							endLoop = true;
 						}
 						candidateVertices.clear();
-						cout<<"list1 size after clear:"<<candidateVertices.size()<<endl;
+//						cout<<"list1 size after clear:"<<candidateVertices.size()<<endl;
 						cout.flush();
-						kdTree->searchNodes(candidateVertices,kdTree->getRoot(),centerRadius[3],centerRadius);
-						cout<<"list2 size:"<<candidateVertices.size()<<endl;
-						cout.flush();
+						kdTree->searchNodes(candidateVertices,treeRoot->getRoot(),abs(centerRadius[3]),centerRadius);
+//						cout<<"list2 size:"<<candidateVertices.size()<<endl;
+//						cout.flush();
 						if(candidateVertices.size())
 						{
 							for(unsigned int j=0; j<candidateVertices.size(); j++)
 							{
-								cout<<"chk................\ttested vertex"<<candidateVertices[j]->getId()<<endl;
+//								cout<<"chk................\ttested vertex"<<candidateVertices[j]->getId()<<endl;
 								if(((cell.getVertexListSize()==2) && cell.testCircumCircle(candidateVertices[j],centerRadius))
 								|| ((cell.getVertexListSize()==3) && (tstSphrReturn=cell.testCircumSphere(*candidateVertices[j],centerRadius))))
 								{
-									cout<<"passed 1st level...\ttested vertex"<<candidateVertices[j]->getId()<<endl;
-									cout<<"possible radius..................:"<<centerRadius[3]<<endl;
+//									cout<<"passed 1st level...\ttested vertex"<<candidateVertices[j]->getId()<<endl;
+//									cout<<"possible radius..................:"<<centerRadius[3]<<endl;
 									if(centerRadius[3]<minRadius)
 									{
-										if( (cell.getNeighListSize()>0 && !cell.checkOrientation(*candidateVertices[j]))
+//										if( (cell.getNeighListSize()>0 && !cell.checkOrientation(*candidateVertices[j]))
+										if( (cell.getNeighListSize()>0 && !cell.checkOrientationAdaptive(*candidateVertices[j]))
 										|| (tstSphrReturn==midstate_val))
 										{
-											tempRadius =centerRadius[3];
-											possibleFail = true;
+											if(abs(centerRadius[3])<abs(minRadius))
+											{
+												tempRadius =centerRadius[3];
+												possibleFail = true;
+											}
 										}
 										else
 										{
 											possibleFail = false;
-											cout<<"possible radius:"<<centerRadius[3]<<endl;
+											//cout<<"possible radius:"<<centerRadius[3]<<endl;
 											minRadius=centerRadius[3];
 											winnerVertex=candidateVertices[j];
 											cell.setCircumCenter(centerRadius);
@@ -346,6 +400,8 @@ bool Solid::makeCell(deque<Cell>::reference cell, kdtree* kdTree, double alphaPl
 			}
 			if(!winnerVertex)
 			{
+				if(!expandSearchVolume)
+					break;
 				for(int m=0; m<2; m++)
 					for(int n=0; n<3; n++)
 						initSearchAreaBox[m][n] += pow(-1.0, m+1)*stepSize;
@@ -353,6 +409,8 @@ bool Solid::makeCell(deque<Cell>::reference cell, kdtree* kdTree, double alphaPl
 				candidateVertices.clear();
 			}
 		}
+		if(!winnerVertex)
+			return false;
 		if(winnerVertex)
 		{
 			if(cell.getVertexListSize()==2)
