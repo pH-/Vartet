@@ -84,6 +84,15 @@ void treeNode::attachPtObject(deque<Vertex>::pointer partRef)
 	pointObj=partRef;
 }
 
+double* treeNode::getLowRegion()
+{
+	return regionLow;
+}
+
+double* treeNode::getHighRegion()
+{
+	return regionHigh;
+}
 bool treeNode::isLeaf()
 {
 	return(!leftChild && !rightChild);

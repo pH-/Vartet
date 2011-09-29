@@ -35,7 +35,7 @@ void drawAxes()
 	glPushMatrix();
 	glTranslated(0.0,0.0,0.0);
 	glBegin(GL_LINES);
-	glColor3f(1.0,0.0,0.0);
+	glColor3f(1.0,0.0,1.0);
 	glVertex3d(0,0,0);
 	glVertex3d(20.0,0,0);
 	glColor3f(0.0,1.0,0.0);
@@ -145,6 +145,7 @@ void keyboard(unsigned char key, int x, int y)
 			glutPostRedisplay();
 			break;
 		case '0':
+			firstCell=0;
 			lastCell=model.listOfCellsSize();
 			glutPostRedisplay();
 			break;
@@ -158,14 +159,21 @@ void keyboard(unsigned char key, int x, int y)
 			break;
 		case '2':
 			firstCell=0;
-			if(lastCell<model.listOfCellsSize())
+			if(lastCell<firstCell)
+				lastCell=firstCell;
+			else if(lastCell<model.listOfCellsSize())
 				lastCell++;
 			else
-				lastCell=1;
+				lastCell=firstCell;
 			glutPostRedisplay();
 			break;
 		case '3':
 			faceToShow=(faceToShow+1)%54;
+			glutPostRedisplay();
+			break;
+		case '4':
+			if(firstCell>0)
+				firstCell--;
 			glutPostRedisplay();
 			break;
 		case 'c':
@@ -176,6 +184,11 @@ void keyboard(unsigned char key, int x, int y)
 			wire=!wire;
 			glutPostRedisplay();
 			break;
+//		case 'd':
+//		case 'D':
+//			model.delaunize();
+//			glutPostRedisplay();
+//			break;
 		default:
 			break;
 	}
@@ -217,9 +230,13 @@ int main (int argc, char** argv)
 	Plc inputModel;
 	cout<<argv[1];
 	inputModel.parsePolyFile(argv[1]);
-	model.populateVertices(inputModel.getPlcVertices());
+//	model.populateVertices(inputModel.getPlcVertices());
+	model.populateVerticesRandom();
 	exactinit();
 	model.delaunize();
+//TODO below line is not req.. its present for debugging..
+	srand(time(0));
+//TODO delete code above
 	glutInit(&argc,argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
 	glutInitWindowSize(500, 500);

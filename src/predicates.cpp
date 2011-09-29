@@ -1633,6 +1633,34 @@ REAL orient2d(REAL *pa, REAL *pb, REAL *pc)
   return orient2dadapt(pa, pb, pc, detsum);
 }
 
+REAL formCircle3d(REAL *pa, REAL *pb, REAL *pc)
+{
+	REAL detleft, detright, det;
+	REAL detsum, errbound;
+
+	detleft = ((pa[0]-pb[0]) - (pa[2]-pb[2])) * ((pc[1]-pb[1])-(pc[2]-pb[2]));
+	detright= ((pc[0]-pb[0]) - (pc[2]-pb[2])) * ((pa[1]-pb[1])-(pa[2]-pb[2]));
+	det = detleft-detright;
+
+	if (detleft > 0.0) {
+		if (detright <= 0.0) {
+			return det;
+		} else {
+			detsum = detleft + detright;
+		}
+	}
+	else if (detleft < 0.0) {
+		if (detright >= 0.0) {
+			return det;
+		} else {
+			detsum = -detleft - detright;
+		}
+	}
+	else {
+		return det;
+	}
+
+}
 /*****************************************************************************/
 /*                                                                           */
 /*  orient3dfast()   Approximate 3D orientation test.  Nonrobust.            */

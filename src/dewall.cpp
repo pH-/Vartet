@@ -11,16 +11,27 @@ int lastCell;
 int faceToShow=0;
 bool showCircle=false;
 bool wire=false;
+bool debug=true;
+int cellCounter=0;
+extern Solid model;
 
-//struct classcomp {
-//  bool operator() (const string f1id, const string f2id)
-//  {
-//	  if(f1id.compare(f2id)>=0)
-//		  return true;
-//	  else
-//		  return false;
-//  }
-//};
+bool sortVertexList(deque<Vertex>::pointer p1, deque<Vertex>::pointer p2, double alphaValue, int axisToUse)
+{
+	return abs(alphaValue-p1->getCoord((axisToSort)axisToUse)) <= abs(alphaValue-p2->getCoord((axisToSort)axisToUse));
+}
+class sorter
+{
+public:
+	sorter(double alphaVal, int axisVal) : alpha(alphaVal), axis(axisVal) {}
+	bool operator()(deque<Vertex>::pointer p1, deque<Vertex>::pointer p2)
+	{
+		return sortVertexList(p1,p2,alpha,axis);
+	}
+private:
+	double alpha;
+	int axis;
+};
+
 
 //void Solid::dewall(axisToSort axis, deque<Vertex>& vertices, map<string,deque<Face>::pointer>& activeFaceList, deque<deque<deque<deque<deque<Vertex>::pointer > > > >& grid)
 void Solid::dewall(map<string,deque<Face>::pointer>& activeFaceList, kdtree *kdTree, kdtree *treeRoot)
@@ -31,73 +42,73 @@ void Solid::dewall(map<string,deque<Face>::pointer>& activeFaceList, kdtree *kdT
 	map<string,deque<Face>::pointer> aflalpha;
 	map<string,deque<Face>::pointer> afllow;
 	map<string,deque<Face>::pointer> aflhigh;
-//	deque<Vertex> verticesLow;
-//	deque<Vertex> verticesHigh;
-//	deque<Vertex>::iterator vit;
-	//Edge* newEdge;
+	deque<deque<Vertex>::pointer > candidateVertices;
+	double searchBoxFirstSimplex[2][3];
+	bool endFirstSimplexSearchLoop=false;
 	Cell* newCell;
-//	for (vit = vertices.begin(); vit != vertices.end(); i++,vit++) {
-//		if (i < medianIndex)
-//			verticesLow.push_back(*vit);
-//		else if (i > medianIndex)
-//			verticesHigh.push_back(*vit);
-//	}
-//	if(floor(vertices[medianIndex].getCoord(axis)) != floor(vertices[medianIndex+1].getCoord(axis)))
-//		alphaPlane = floor(vertices[medianIndex+1].getCoord(axis));
-//	else
-//		alphaPlane = vertices[medianIndex+1].getCoord(axis) + ((vertices[medianIndex+1].getCoord(axis) - vertices[medianIndex].getCoord(axis))/2);
+	int axisToUse = kdTree->getRoot()->getaxis();
 	alphaPlane = kdTree->getRoot()->getKeyValue();
-	cout<<"alpha Plane:"<<kdTree->getRoot()->getaxis()<<"->"<<alphaPlane<<endl;
-	if (activeFaceList.size() == 0)
+	for(int i=0; i<3; i++)
 	{
-//		int findFirstVertex=0;
-		newCell = new Cell();
-		if (newCell->getVertexListSize() <=4) {
-			newCell->addVertex(kdTree->getRoot()->getPtObject());
-		}
-		listOfCells.push_back(*newCell);
-		makeCell(listOfCells.back(),kdTree, treeRoot, alphaPlane);
-		if(floor(alphaPlane)==-12)
-		{
-			cout<<"need to break";
-			cout.flush();
-		}
-		makeCell(listOfCells.back(),kdTree, treeRoot, alphaPlane);
+		searchBoxFirstSimplex[0][i] = -numeric_limits<double>::max();
+		searchBoxFirstSimplex[1][i] =  numeric_limits<double>::max();
+	}
+	searchBoxFirstSimplex[0][axisToUse] = kdTree->getRoot()->getLeftChild()->getHighRegion()[axisToUse];
+	//searchBoxFirstSimplex[1][axisToUse] = kdTree->getRoot()->getRightChild()->getLowRegion()[axisToUse];
+	searchBoxFirstSimplex[1][axisToUse] = alphaPlane;
 
-//		while(!makeCell(listOfCells.back(),kdTree, alphaPlane))
-//		{
-//			listOfCells.back().delVertices();
-//			findFirstVertex++;
-//			listOfCells.back().addVertex(&listOfVertices[vertices[medianIndex-findFirstVertex].getId()]);
-//			makeCell(listOfCells.back(),grid, alphaPlane);
-//			cout<<"still in loop"<<endl;
-//		}
-//		if(listOfCells.back().getVertexListSize()!=4)
-//			return;
-////		cout << "vertex1" << newCell->getVertices()[0].getXCoord()<<endl;
-////		cout<<"Edges1, v1, xcoord:"<<listOfCells.back().getEdges()[0].getVertex()[0]->getXCoord()<<endl;
-////		cout<<"Edges1, v2, xcoord:"<<listOfCells.back().getEdges()[0].getVertex()[1]->getXCoord()<<endl;
-////
-////		cout<<"Edges1, v1, xcoord:"<<listOfCells.back().getEdges()[1].getVertex()[0]->getXCoord()<<endl;
-////		cout<<"Edges1, v2, xcoord:"<<listOfCells.back().getEdges()[1].getVertex()[1]->getXCoord()<<endl;
-////
-////		cout<<"Edges1, v1, xcoord:"<<listOfCells.back().getEdges()[2].getVertex()[0]->getXCoord()<<endl;
-////		cout<<"Edges1, v2, xcoord:"<<listOfCells.back().getEdges()[2].getVertex()[1]->getXCoord()<<endl;
-////
-////		cout.flush();
-//		cout<<"killer"<<medianIndex-findFirstVertex<<endl;
-//		cout<<"out here"<<endl;
-		if(listOfCells.back().getFaceListSize()==4)
+	cout<<"alpha Plane:"<<kdTree->getRoot()->getaxis()<<"->"<<alphaPlane<<endl;
+	while (activeFaceList.size() == 0 && !endFirstSimplexSearchLoop)
+	{
+		kdTree->searchNodes(candidateVertices,kdTree->getRoot(),searchBoxFirstSimplex);
+		cout<<"size to look for:"<<candidateVertices.size()<<endl;
+		if(candidateVertices.size())
 		{
-			for(int i=0; i<4; i++)
-				activeFaceList.insert(pair<string,deque<Face>::pointer>(listOfCells.back().getFaces()[i]->getId(), listOfCells.back().getFaces()[i]));
-			cout<<endl<<"current cellid:"<<listOfCells.back().getId()<<endl;
-			cout.flush();
+			sort(candidateVertices.begin(), candidateVertices.end(),sorter(alphaPlane, axisToUse));
+			for(unsigned int i=0; i<candidateVertices.size(); i++)
+			{
+				newCell = new Cell();
+				if (newCell->getVertexListSize() <=4) {
+					newCell->addVertex(candidateVertices[i]);
+				}
+				listOfCells.push_back(*newCell);
+				makeCell(listOfCells.back(),kdTree, treeRoot, alphaPlane);
+				if(!listOfCells.back().getFaceListSize())
+				{
+					listOfCells.pop_back();
+					listOfEdges.pop_back();
+					continue;
+				}
+				makeCell(listOfCells.back(),kdTree, treeRoot, alphaPlane);
+				cellCounter++;
+//				cout<<"first cell face list size"<<listOfCells.back().getFaceListSize()<<endl;
+				if(listOfCells.back().getFaceListSize()==4)
+				{
+					for(int i=0; i<4; i++)
+						activeFaceList.insert(pair<string,deque<Face>::pointer>(listOfCells.back().getFaces()[i]->getId(), listOfCells.back().getFaces()[i]));
+					cout<<endl<<"current cellid:"<<listOfCells.back().getId()<<endl;
+					cout.flush();
+					endFirstSimplexSearchLoop=true;
+					break;
+				}
+				else
+				{
+					listOfCells.pop_back();
+					listOfFaces.pop_back();
+				}
+			}
+			if(!endFirstSimplexSearchLoop)
+			{
+				candidateVertices.clear();
+				searchBoxFirstSimplex[0][axisToUse]-=abs(candidateVertices[0]->getCoord((axisToSort)axisToUse));
+//				searchBoxFirstSimplex[1][axisToUse]+=abs(candidateVertices[0]->getCoord((axisToSort)axisToUse));
+			}
 		}
 		else
 		{
-			cout<<"chk out for erroneous triangles";
-			cout.flush();
+			candidateVertices.clear();
+			searchBoxFirstSimplex[0][axisToUse] -= abs(kdTree->getRoot()->getLeftChild()->getHighRegion()[axisToUse]);
+//			searchBoxFirstSimplex[1][axisToUse] += abs(kdTree->getRoot()->getRightChild()->getLowRegion()[axisToUse]);
 		}
 	}
 	if(activeFaceList.size())
@@ -106,12 +117,12 @@ void Solid::dewall(map<string,deque<Face>::pointer>& activeFaceList, kdtree *kdT
 		for(afiter=activeFaceList.begin(); afiter!=activeFaceList.end(); afiter++)
 		{
 			if((*afiter).second->getVertices()[0]->getCoord((axisToSort)kdTree->getRoot()->getaxis())<=alphaPlane
-			&& (*afiter).second->getVertices()[1]->getCoord((axisToSort)kdTree->getRoot()->getaxis())<=alphaPlane
-			&& (*afiter).second->getVertices()[2]->getCoord((axisToSort)kdTree->getRoot()->getaxis())<=alphaPlane)
+					&& (*afiter).second->getVertices()[1]->getCoord((axisToSort)kdTree->getRoot()->getaxis())<=alphaPlane
+					&& (*afiter).second->getVertices()[2]->getCoord((axisToSort)kdTree->getRoot()->getaxis())<=alphaPlane)
 				afllow.insert(pair<string,deque<Face>::pointer>((*afiter).first, (*afiter).second));
 			else if((*afiter).second->getVertices()[0]->getCoord((axisToSort)kdTree->getRoot()->getaxis())>alphaPlane
-			     && (*afiter).second->getVertices()[1]->getCoord((axisToSort)kdTree->getRoot()->getaxis())>alphaPlane
-			     && (*afiter).second->getVertices()[2]->getCoord((axisToSort)kdTree->getRoot()->getaxis())>alphaPlane)
+					&& (*afiter).second->getVertices()[1]->getCoord((axisToSort)kdTree->getRoot()->getaxis())>alphaPlane
+					&& (*afiter).second->getVertices()[2]->getCoord((axisToSort)kdTree->getRoot()->getaxis())>alphaPlane)
 				aflhigh.insert(pair<string,deque<Face>::pointer>((*afiter).first, (*afiter).second));
 			else
 				aflalpha.insert(pair<string,deque<Face>::pointer>((*afiter).first, (*afiter).second));
@@ -130,7 +141,7 @@ void Solid::dewall(map<string,deque<Face>::pointer>& activeFaceList, kdtree *kdT
 			map<string,deque<Face>::pointer>::iterator delfaceit;
 			multimap<deque<Cell>::pointer, deque<Face>::pointer>::iterator niter;
 			deque<deque<Face>::pointer>::iterator faceiter;
-//			for(aflit=aflalpha.begin(); aflit!=aflalpha.end(); )
+			//			for(aflit=aflalpha.begin(); aflit!=aflalpha.end(); )
 			while(aflalpha.size())
 			{
 				aflit=aflalpha.begin();
@@ -147,15 +158,15 @@ void Solid::dewall(map<string,deque<Face>::pointer>& activeFaceList, kdtree *kdT
 				}
 				if((*aflit).second->getNeighCell1() && (*aflit).second->getNeighCell2())
 				{
-//					aflalpha.erase(aflit++);
+					//					aflalpha.erase(aflit++);
 					aflalpha.erase(aflit);
 					continue;
 				}
 				newCell = new Cell();
 				listOfCells.push_back(*newCell);
 				cout<<"current afl entry:"<<(*aflit).first<<endl;
-				if(!(*aflit).first.compare("14,18,29"))
-					cout<<"chk for error here";
+				if(!(*aflit).first.compare("6,7,12"))
+					debug=true;
 				if(!(*aflit).first.compare("12,26,52"))
 					cout<<"why chosing 27?"<<endl;
 				cout.flush();
@@ -164,15 +175,16 @@ void Solid::dewall(map<string,deque<Face>::pointer>& activeFaceList, kdtree *kdT
 				cout.flush();
 				if(makeCell(listOfCells.back(),kdTree,treeRoot, alphaPlane))
 				{
-					cout<<"current cellid:"<<listOfCells.back().getId()<<endl;
+					cellCounter++;
+					cout<<"Cell Number:"<<cellCounter<<" cellid:"<<listOfCells.back().getId()<<endl;
 					//				if(listOfCells.back().getId()=="17,19,33,40")
 					//					cout<<"break here"<<endl;
 					cout<<"faces generated  ";
 					cout.flush();
 					for(faceiter=listOfCells.back().getFaces().begin(); faceiter!=listOfCells.back().getFaces().end(); faceiter++)
 					{
-//						if(!(*faceiter)->getId().compare("12,13,26"))
-//							cout<<"why inserting 12/13/26"<<endl;
+						//						if(!(*faceiter)->getId().compare("12,13,26"))
+						//							cout<<"why inserting 12/13/26"<<endl;
 						cout<<":"<<(*faceiter)->getId();
 						cout.flush();
 						delfaceit = aflalpha.find((*faceiter)->getId());
@@ -199,8 +211,8 @@ void Solid::dewall(map<string,deque<Face>::pointer>& activeFaceList, kdtree *kdT
 						}
 						else
 						{
-//							if(!(*faceiter)->getId().compare("12,13,26"))
-//								cout<<"why inserting 12/13/26"<<endl;
+							//							if(!(*faceiter)->getId().compare("12,13,26"))
+							//								cout<<"why inserting 12/13/26"<<endl;
 							aflalpha.insert(pair<string,deque<Face>::pointer>((*faceiter)->getId(),*faceiter));
 						}
 					}
@@ -220,6 +232,7 @@ void Solid::dewall(map<string,deque<Face>::pointer>& activeFaceList, kdtree *kdT
 			cout<<"alpha size:"<<aflalpha.size()<<endl;
 			cout<<"Number of cells"<<listOfCells.size()<<endl;
 			cout<<"Number of faces"<<listOfFaces.size()<<endl;
+			cout<<"Number of edges"<<listOfEdges.size()<<endl;
 			map<string,deque<Face>::pointer>::iterator fmapit;
 			//		for(unsigned int i=0; i<listOfCells.size(); i++)
 			//		{
@@ -228,14 +241,14 @@ void Solid::dewall(map<string,deque<Face>::pointer>& activeFaceList, kdtree *kdT
 			//		}
 		}
 	}
-allend:
+	allend:
 	cout<<"aflalphalist:"<<aflalpha.size()<<endl;
 	cout<<"afllowlist:"<<afllow.size()<<endl;
 	cout<<"aflhighlist:"<<aflhigh.size()<<endl;
 	cout.flush();
-//	if(!kdTree->getRoot()->getLeftChild()->getaxis())
-//		return;
-	if(jump && !kdTree->getRoot()->getLeftChild()->isLeaf() )
+	//	if(!kdTree->getRoot()->getLeftChild()->getaxis())
+	//		return;
+	if(jump && afllow.size() ) //&& !kdTree->getRoot()->getLeftChild()->isLeaf()
 	{
 		kdtree *kdsubTree=new kdtree();
 		kdsubTree->setRoot(kdTree->getRoot()->getLeftChild());
@@ -245,7 +258,7 @@ allend:
 	cout<<"afllowlist:"<<afllow.size()<<endl;
 	cout<<"aflhighlist:"<<aflhigh.size()<<endl;
 	cout.flush();
-	if(jump && !kdTree->getRoot()->getRightChild()->isLeaf() )
+	if(jump && aflhigh.size()) //!kdTree->getRoot()->getRightChild()->isLeaf()
 	{
 		kdtree *kdsubTree=new kdtree();
 		kdsubTree->setRoot(kdTree->getRoot()->getRightChild());
@@ -275,7 +288,8 @@ bool Solid::makeCell(deque<Cell>::reference cell, kdtree* kdTree, kdtree* treeRo
 		//cout<<endl<<centerCoords[0]<<","<<centerCoords[1]<<","<<centerCoords[2]<<endl;
 		//cout.flush();
 		winnerVertex=kdTree->nearestNeighbour(cell.getVertices()[0]);
-		if(!winnerVertex)
+		cout<<"winner vertex coord to compare:"<<winnerVertex->getCoord((axisToSort)kdTree->getRoot()->getaxis())<<endl;
+		if(!winnerVertex || winnerVertex->getCoord((axisToSort)kdTree->getRoot()->getaxis())<=alphaPlane)
 			return false;
 		cout<<"winner vertex :"<<winnerVertex->getId()<<endl;
 		cell.addVertex(winnerVertex);
@@ -293,12 +307,12 @@ bool Solid::makeCell(deque<Cell>::reference cell, kdtree* kdTree, kdtree* treeRo
 		Face*   newFace  = NULL;
 		double initSearchAreaBox[2][3];
 		double centerRadius[4];
-		double minRadius=0;
+		//double minRadius=0;
 		double stepSize = 1.0;
-		trippleBool tstSphrReturn;
-		double tempRadius;
-		bool   possibleFail=false, endLoop = false;
-		bool expandSearchVolume=true;
+		//trippleBool tstSphrReturn;
+		//double tempRadius;
+		bool endLoop = false;
+		bool expandSearchVolume=true, firstCandidateWinner=false;
 		deque<deque<Vertex>::pointer > candidateVertices;
 		//deque<Vertex>::pointer candidateWinnerVertex;
 		initSearchAreaBox[0][0]= (cell.getVertices()[0]->getXCoord()<cell.getVertices()[1]->getXCoord())?cell.getVertices()[0]->getXCoord():cell.getVertices()[1]->getXCoord();
@@ -320,83 +334,64 @@ bool Solid::makeCell(deque<Cell>::reference cell, kdtree* kdTree, kdtree* treeRo
 		{
 			//cout<<"list1 size:"<<candidateVertices.size()<<endl;
 			kdTree->searchNodes(candidateVertices,kdTree->getRoot(),initSearchAreaBox);
-			//cout<<"list1 size:"<<candidateVertices.size()<<endl;
+			if(debug)
+				cout<<"list1 size:"<<candidateVertices.size()<<endl;
 			if(kdTree->getRoot()->getsubTreeSize()==candidateVertices.size())
 				expandSearchVolume = false;
 			cout.flush();
 			if(candidateVertices.size())
 			{
-				for(unsigned int i=0; i<candidateVertices.size() && !endLoop; i++)
+				for(unsigned int i=0; i<candidateVertices.size(); i++)
 				{
-					//cout<<"\ttested vertex"<<candidateVertices[i]->getId()<<endl;
-//					if(cell.getNeighListSize()>0 && !cell.checkOrientation(*candidateVertices[i]))
-					if(cell.getNeighListSize()>0 && !cell.checkOrientationAdaptive(*candidateVertices[i]))
+					if(debug)
+						cout<<"\ttested vertex"<<candidateVertices[i]->getId()<<endl;
+					if((cell.getVertexListSize()==3 && !cell.check3DOrientationAdaptive(*candidateVertices[i]))
+					 ||(cell.getVertexListSize()==2 && !cell.check2DOrientationAdaptive(*candidateVertices[i]))
+					 ||(!candidateVertices[i]->getNumOfOpenFaces()))
 						continue;
 //					cout<<"cell vertices:"<<cell.getVertexListSize()<<endl;
 //					cout.flush();
-					if(((cell.getVertexListSize()==2) && cell.testCircumCircle(candidateVertices[i],centerRadius))
-					|| ((cell.getVertexListSize()==3) && cell.testCircumSphere(*candidateVertices[i],centerRadius)==true_val))
+					if(!firstCandidateWinner)
 					{
-//						cout<<"possible radius..................:"<<centerRadius[3]<<endl;
-						if(!minRadius)
+						winnerVertex=candidateVertices[i];
+						firstCandidateWinner=true;
+						endLoop=true;
+						continue;
+					}
+					if(((cell.getVertexListSize()==2) && cell.testCircumCircleAdaptive(*winnerVertex, *candidateVertices[i])>0)
+					|| ((cell.getVertexListSize()==3) && cell.testCircumSphereAdaptive(*winnerVertex, *candidateVertices[i])>0))
+					{
+						winnerVertex=candidateVertices[i];
+					}
+				}
+				if(winnerVertex && cell.getVertexListSize()==3)
+				{
+					cell.testCircumSphere(*winnerVertex, centerRadius);
+					cell.setCircumCenter(centerRadius);
+					cell.setCircumRadius(centerRadius[3]);
+					candidateVertices.clear();
+					//						cout<<"list1 size after clear:"<<candidateVertices.size()<<endl;
+					cout.flush();
+					kdTree->searchNodes(candidateVertices,treeRoot->getRoot(),abs(centerRadius[3]),centerRadius);
+					if(debug)
+						cout<<"list2 size:"<<candidateVertices.size()<<endl;
+					//						cout.flush();
+					if(candidateVertices.size())
+					{
+						for(unsigned int j=0; j<candidateVertices.size(); j++)
 						{
-							minRadius=centerRadius[3];
-							winnerVertex=candidateVertices[i];
-//							cout<<"possible radius:"<<centerRadius[3]<<endl;
-							cell.setCircumCenter(centerRadius);
-							cell.setCircumRadius((centerRadius[3]>0)?centerRadius[3]:centerRadius[3]*-1);
-							endLoop = true;
-						}
-						candidateVertices.clear();
-//						cout<<"list1 size after clear:"<<candidateVertices.size()<<endl;
-						cout.flush();
-						kdTree->searchNodes(candidateVertices,treeRoot->getRoot(),abs(centerRadius[3]),centerRadius);
-//						cout<<"list2 size:"<<candidateVertices.size()<<endl;
-//						cout.flush();
-						if(candidateVertices.size())
-						{
-							for(unsigned int j=0; j<candidateVertices.size(); j++)
+							if(debug)
+								cout<<"vertex tested in final test"<<candidateVertices[j]->getId()<<endl;
+							if(cell.testCircumSphereAdaptive(*winnerVertex, *candidateVertices[j])>0)
 							{
-//								cout<<"chk................\ttested vertex"<<candidateVertices[j]->getId()<<endl;
-								if(((cell.getVertexListSize()==2) && cell.testCircumCircle(candidateVertices[j],centerRadius))
-								|| ((cell.getVertexListSize()==3) && (tstSphrReturn=cell.testCircumSphere(*candidateVertices[j],centerRadius))))
-								{
-//									cout<<"passed 1st level...\ttested vertex"<<candidateVertices[j]->getId()<<endl;
-//									cout<<"possible radius..................:"<<centerRadius[3]<<endl;
-									if(centerRadius[3]<minRadius)
-									{
-//										if( (cell.getNeighListSize()>0 && !cell.checkOrientation(*candidateVertices[j]))
-										if( (cell.getNeighListSize()>0 && !cell.checkOrientationAdaptive(*candidateVertices[j]))
-										|| (tstSphrReturn==midstate_val))
-										{
-											if(abs(centerRadius[3])<abs(minRadius))
-											{
-												tempRadius =centerRadius[3];
-												possibleFail = true;
-											}
-										}
-										else
-										{
-											possibleFail = false;
-											//cout<<"possible radius:"<<centerRadius[3]<<endl;
-											minRadius=centerRadius[3];
-											winnerVertex=candidateVertices[j];
-											cell.setCircumCenter(centerRadius);
-											cell.setCircumRadius((centerRadius[3]>0)?centerRadius[3]:centerRadius[3]*-1);
-										}
-									}
-								}
-//								if(candidateVertices[j]->getSqDistance(centerRadius) < centerRadius[3]*centerRadius[3])
-//								{
-//									//tempRadius = sqrt();
-//									possibleFail = true;
-//								}
-							}
-							if(possibleFail)
 								winnerVertex=NULL;
+								break;
+							}
 						}
 					}
 				}
+
+				//}
 			}
 			if(!winnerVertex)
 			{
@@ -450,23 +445,24 @@ bool Solid::makeCell(deque<Cell>::reference cell, kdtree* kdTree, kdtree* treeRo
 			else if(cell.getVertexListSize()==3)
 			{
 				cell.addVertex(winnerVertex);
-				newEdge1 = new Edge();
-				newEdge2 = new Edge();
-				newEdge3 = new Edge();
+				int newFaceCount=0;
+//				newEdge1 = new Edge();
+//				newEdge2 = new Edge();
+//				newEdge3 = new Edge();
 				map<string,deque<Face>::pointer>::iterator fmapit;
 				int idarray[3];
 				int cellIdArray[4];
 				string facid;
 				stringstream tempStream1, tempStream2, tempStream3, cellidstream;
-				listOfEdges.push_back(*newEdge1);
-				listOfEdges.back().setVertices(cell.getVertices()[0],cell.getVertices()[3]);
-				cell.addEdge(&listOfEdges.back());
-				listOfEdges.push_back(*newEdge2);
-				listOfEdges.back().setVertices(cell.getVertices()[1],cell.getVertices()[3]);
-				cell.addEdge(&listOfEdges.back());
-				listOfEdges.push_back(*newEdge3);
-				listOfEdges.back().setVertices(cell.getVertices()[2],cell.getVertices()[3]);
-				cell.addEdge(&listOfEdges.back());
+//				listOfEdges.push_back(*newEdge1);
+//				listOfEdges.back().setVertices(cell.getVertices()[0],cell.getVertices()[3]);
+//				cell.addEdge(&listOfEdges.back());
+//				listOfEdges.push_back(*newEdge2);
+//				listOfEdges.back().setVertices(cell.getVertices()[1],cell.getVertices()[3]);
+//				cell.addEdge(&listOfEdges.back());
+//				listOfEdges.push_back(*newEdge3);
+//				listOfEdges.back().setVertices(cell.getVertices()[2],cell.getVertices()[3]);
+//				cell.addEdge(&listOfEdges.back());
 				//			cell.getEdges()[3].setVertices(&cell.getVertices()[0],&cell.getVertices()[3]);
 				//			cell.getEdges()[4].setVertices(&cell.getVertices()[1],&cell.getVertices()[3]);
 				//			cell.getEdges()[5].setVertices(&cell.getVertices()[2],&cell.getVertices()[3]);
@@ -489,11 +485,18 @@ bool Solid::makeCell(deque<Cell>::reference cell, kdtree* kdTree, kdtree* treeRo
 					faceMap.insert(pair<string,deque<Face>::pointer>(facid,&listOfFaces.back()));
 					cell.addFace(&listOfFaces.back());
 					cell.getFaces().back()->incrNumOfOpenFaces();
+					newFaceCount++;
 				}
 				else
 				{
-					cell.addFace((*fmapit).second);
-					(*fmapit).second->decrNumOfOpenFaces();
+					if(cell.addFace((*fmapit).second))
+						(*fmapit).second->decrNumOfOpenFaces();
+					else
+					{
+						winnerVertex->decrNumOfOpenFaces();
+						winnerVertex=NULL;
+						return false;
+					}
 				}
 				//tempStream<<cell.getVertices()[1]->getId()<<','<<cell.getVertices()[2]->getId()<<','<<cell.getVertices()[3]->getId();
 				idarray[0]=cell.getVertices()[1]->getId();
@@ -514,12 +517,24 @@ bool Solid::makeCell(deque<Cell>::reference cell, kdtree* kdTree, kdtree* treeRo
 					faceMap.insert(pair<string,deque<Face>::pointer>(facid,&listOfFaces.back()));
 					cell.addFace(&listOfFaces.back());
 					cell.getFaces().back()->incrNumOfOpenFaces();
+					newFaceCount++;
 
 				}
 				else
 				{
-					cell.addFace((*fmapit).second);
-					(*fmapit).second->decrNumOfOpenFaces();
+					if(cell.addFace((*fmapit).second))
+						(*fmapit).second->decrNumOfOpenFaces();
+					else
+					{
+						while(newFaceCount)
+						{
+							listOfFaces.pop_back();
+							newFaceCount--;
+						}
+						winnerVertex->decrNumOfOpenFaces();
+						winnerVertex=NULL;
+						return false;
+					}
 				}
 				//tempStream<<cell.getVertices()[2]->getId()<<','<<cell.getVertices()[0]->getId()<<','<<cell.getVertices()[3]->getId();
 				idarray[0]=cell.getVertices()[2]->getId();
@@ -543,12 +558,36 @@ bool Solid::makeCell(deque<Cell>::reference cell, kdtree* kdTree, kdtree* treeRo
 				}
 				else
 				{
-					cell.addFace((*fmapit).second);
-					(*fmapit).second->decrNumOfOpenFaces();
+					if(cell.addFace((*fmapit).second))
+						(*fmapit).second->decrNumOfOpenFaces();
+					else
+					{
+						while(newFaceCount)
+						{
+							listOfFaces.pop_back();
+							newFaceCount--;
+						}
+						winnerVertex->decrNumOfOpenFaces();
+						winnerVertex=NULL;
+						return false;
+					}
 				}
 				//			cell.getFaces()[1].addVertices(&cell.getVertices()[0],&cell.getVertices()[1],&cell.getVertices()[3]);
 				//			cell.getFaces()[2].addVertices(&cell.getVertices()[1],&cell.getVertices()[2],&cell.getVertices()[3]);
 				//			cell.getFaces()[3].addVertices(&cell.getVertices()[2],&cell.getVertices()[0],&cell.getVertices()[3]);
+
+				newEdge1 = new Edge();
+				newEdge2 = new Edge();
+				newEdge3 = new Edge();
+				listOfEdges.push_back(*newEdge1);
+				listOfEdges.back().setVertices(cell.getVertices()[0],cell.getVertices()[3]);
+				cell.addEdge(&listOfEdges.back());
+				listOfEdges.push_back(*newEdge2);
+				listOfEdges.back().setVertices(cell.getVertices()[1],cell.getVertices()[3]);
+				cell.addEdge(&listOfEdges.back());
+				listOfEdges.push_back(*newEdge3);
+				listOfEdges.back().setVertices(cell.getVertices()[2],cell.getVertices()[3]);
+				cell.addEdge(&listOfEdges.back());
 
 				cell.getFaces()[1]->addEdges(cell.getEdges()[0],cell.getEdges()[4],cell.getEdges()[3]);
 				cell.getFaces()[2]->addEdges(cell.getEdges()[1],cell.getEdges()[5],cell.getEdges()[4]);
@@ -567,358 +606,7 @@ bool Solid::makeCell(deque<Cell>::reference cell, kdtree* kdTree, kdtree* treeRo
 			}
 		}
 	}
-	//deletebelow
-//		unsigned int bboxMin[3], bboxMax[3];
-//		unsigned int *gridCoord1,*gridCoord2, *gridCoord3;
-//		unsigned short int layerlimitx=1, layerlimity=1, layerlimitz=1;
-//		unsigned short int layerlimitX=1, layerlimitY=1, layerlimitZ=1;
-//		int layer=0;
-//		stepSize =0;
-//		double minRadius=0;
-//		double tempRadius;
-//		double centerRadius[4];
-//		bool   twoVertices, endSearch=false;
-//		gridCoord1 = (unsigned int*)malloc(sizeof(unsigned int)*4);
-//		gridCoord2 = (unsigned int*)malloc(sizeof(unsigned int)*4);
-//		gridCoord3 = (unsigned int*)malloc(sizeof(unsigned int)*4);
-//
-//		//cout<<"Vertex1:"<<cell.getVertices()[0].getXCoord()<<","<<cell.getVertices()[0].getYCoord()<<","<<cell.getVertices()[0].getZCoord()<<endl;
-//		//cout<<"Vertex2:"<<cell.getVertices()[1].getXCoord()<<","<<cell.getVertices()[1].getYCoord()<<","<<cell.getVertices()[1].getZCoord()<<endl;
-//		gridCoord1=(unsigned int*)cell.getVertices()[0]->sparePtr;
-//		gridCoord2=(unsigned int*)cell.getVertices()[1]->sparePtr;
-//
-//		bboxMin[0]= (gridCoord1[0]<gridCoord2[0])?gridCoord1[0]:gridCoord2[0];
-//		bboxMax[0]= (gridCoord1[0]>gridCoord2[0])?gridCoord1[0]:gridCoord2[0];
-//		bboxMin[1]= (gridCoord1[1]<gridCoord2[1])?gridCoord1[1]:gridCoord2[1];
-//		bboxMax[1]= (gridCoord1[1]>gridCoord2[1])?gridCoord1[1]:gridCoord2[1];
-//		bboxMin[2]= (gridCoord1[2]<gridCoord2[2])?gridCoord1[2]:gridCoord2[2];
-//		bboxMax[2]= (gridCoord1[2]>gridCoord2[2])?gridCoord1[2]:gridCoord2[2];
-//
-//		if(cell.getVertexListSize()==2)
-//			twoVertices=true;
-//		else
-//			twoVertices=false;
-//
-//		if(!twoVertices)
-//		{
-//			gridCoord3=(unsigned int*)cell.getVertices()[2]->sparePtr;
-//			bboxMin[0]= (bboxMin[0]<gridCoord3[0])?bboxMin[0]:gridCoord3[0];
-//			bboxMax[0]= (bboxMax[0]>gridCoord3[0])?bboxMax[0]:gridCoord3[0];
-//			bboxMin[1]= (bboxMin[1]<gridCoord3[1])?bboxMin[1]:gridCoord3[1];
-//			bboxMax[1]= (bboxMax[1]>gridCoord3[1])?bboxMax[1]:gridCoord3[1];
-//			bboxMin[2]= (bboxMin[2]<gridCoord3[2])?bboxMin[2]:gridCoord3[2];
-//			bboxMax[2]= (bboxMax[2]>gridCoord3[2])?bboxMax[2]:gridCoord3[2];
-//		}
-//
-//		while(winnerVertex==NULL && !endSearch)
-//		{
-////			cout<<"\t\tbbox dims:"<<bboxMin[0]<<","<<bboxMin[1]<<","<<bboxMin[2]<<":XX:"<<bboxMax[0]<<","<<bboxMax[1]<<","<<bboxMax[2]<<endl;
-////			cout<<"\t\tbbox dims:"<<((bboxMin[0]<stepSize)?0:bboxMin[0]-stepSize)<<","<<((bboxMin[1]<stepSize)?0:bboxMin[1]-stepSize)<<","<<((bboxMin[2]<stepSize)?0:bboxMin[2]-stepSize)<<":XX:"<<bboxMax[0]+stepSize<<","<<bboxMax[1]+stepSize<<","<<bboxMax[2]+stepSize<<endl;
-//			for(unsigned int i = (bboxMin[0]<stepSize)?0:bboxMin[0]-stepSize; i<grid.size() && i<=bboxMax[0]+stepSize; i++)
-//			{
-//				for(unsigned int j=(bboxMin[1]<stepSize)?0:bboxMin[1]-stepSize; j<grid[i].size() && j<=bboxMax[1]+stepSize ;j++)
-//					for(unsigned int k=(bboxMin[2]<stepSize)?0:bboxMin[2]-stepSize; k<grid[i][j].size() && k<=bboxMax[2]+stepSize; k++)
-//					{
-//						//cout<<"\t\tgrid pos:"<<i<<":"<<j<<":"<<k<<endl;
-//						if(layer&& (i-((bboxMin[0]<stepSize)?0:bboxMin[0]-stepSize) >=layerlimitx && j-((bboxMin[1]<stepSize)?0:bboxMin[1]-stepSize)>=layerlimity && k-((bboxMin[2]<stepSize)?0:bboxMin[2]-stepSize)>=layerlimitz)
-//								&&(((bboxMax[0]+stepSize)-i >= layerlimitX) && ((bboxMax[1]+stepSize)-j >=layerlimitY) && ((bboxMax[2]+stepSize)-k >=layerlimitZ)))
-//						{
-//							//cout<<"outta here"<<endl;
-//							continue;
-//						}
-//						if(grid[i][j][k].size()==0)
-//						{
-//							//cout<<"nth herE:"<<endl;
-//							continue;
-//						}
-//						else
-//						{
-//							for(unsigned int indexer=0; indexer<grid[i][j][k].size(); indexer++)
-//							{
-//								cout<<"\ttested vertex"<<grid[i][j][k][indexer]->getId()<<endl;
-//								if(grid[i][j][k][indexer]->getId()==cell.getVertices()[0]->getId()
-//								|| grid[i][j][k][indexer]->getId()==cell.getVertices()[1]->getId())
-//									continue;
-//								 if(cell.getVertexListSize()==3 &&
-//									grid[i][j][k][indexer]->getId()==cell.getVertices()[2]->getId())
-//									continue;
-//								if(cell.getNeighListSize()>0 && !cell.checkOrientation(*grid[i][j][k][indexer]))
-//									continue;
-//								if((cell.getVertexListSize()==2 && cell.testCircumCircle(*grid[i][j][k][indexer],centerRadius))
-//								 ||(cell.getVertexListSize()==3 && (cell.testCircumSphere(*grid[i][j][k][indexer],centerRadius)==true_val)))
-//								{
-//									if(minRadius==0)
-//									{
-//										minRadius=centerRadius[3];
-//										winnerVertex=grid[i][j][k][indexer];
-//										cell.setCircumCenter(centerRadius);
-//										cell.setCircumRadius((centerRadius[3]>0)?centerRadius[3]:centerRadius[3]*-1);
-//									}
-//									else
-//									{
-//										tempRadius = centerRadius[3];
-//										if(tempRadius<minRadius)
-//										{
-//											minRadius=tempRadius;
-//											winnerVertex=grid[i][j][k][indexer];
-//											cell.setCircumCenter(centerRadius);
-//											cell.setCircumRadius((centerRadius[3]>0)?centerRadius[3]:centerRadius[3]*-1);
-//										}
-//									}
-//								}
-//
-//							}
-//							if(winnerVertex)
-//							{
-//								confirmWinnerVertex(cell,winnerVertex,grid);
-//								if(winnerVertex)
-//								{
-//									cell.addVertex(winnerVertex);
-//									goto breakAllLoops;
-//								}
-//								else
-//									endSearch=true;
-//							}
-//						}
-//					}
-//			}
-//			if(!endSearch)
-//			{
-//				layer++;
-//				stepSize++;
-//				if(bboxMin[0]<stepSize)
-//					layerlimitx=0;
-//				if(bboxMin[1]<stepSize)
-//					layerlimity=0;
-//				if(bboxMin[2]<stepSize)
-//					layerlimitz=0;
-//				if((bboxMax[0]+stepSize) >grid.size())
-//					layerlimitX=0;
-//				if((bboxMax[1]+stepSize) > grid[0].size())
-//					layerlimitY=0;
-//				if((bboxMax[2]+stepSize) > grid[0][0].size())
-//					layerlimitZ=0;
-//				if((bboxMin[0]<stepSize) && (bboxMin[1]<stepSize) && (bboxMin[2]<stepSize)
-//						&&((bboxMax[0]+stepSize) >grid.size()) &&((bboxMax[1]+stepSize) > grid[0].size()) &&((bboxMax[2]+stepSize) > grid[0][0].size()))
-//					endSearch=true;
-//			}
-//
-//		}
-//		breakAllLoops:
-//		if(!winnerVertex)
-//			return false;
-//
-//		if(twoVertices && winnerVertex)
-//		{
-//			newEdge1 = new Edge();
-//			newEdge2 = new Edge();
-//			string facid;
-//			stringstream tempStream1;
-//			int idarray[3];
-//			listOfEdges.push_back(*newEdge1);
-//			listOfEdges.back().setVertices(cell.getVertices()[1],cell.getVertices()[2]);
-//			cell.addEdge(&listOfEdges.back());
-//			listOfEdges.push_back(*newEdge2);
-//			listOfEdges.back().setVertices(cell.getVertices()[0],cell.getVertices()[2]);
-//			cell.addEdge(&listOfEdges.back());
-//			//cell.getEdges()[1].setVertices(&cell.getVertices()[1],&cell.getVertices()[2]);
-//			//cell.getEdges()[2].setVertices(&cell.getVertices()[0],&cell.getVertices()[2]);
-//			newFace  = new Face();
-//			listOfFaces.push_back(*newFace);
-//			listOfFaces.back().addVertices(cell.getVertices()[0],cell.getVertices()[1],cell.getVertices()[2]);
-//			//TODO
-//			idarray[0]=cell.getVertices()[0]->getId();
-//			idarray[1]=cell.getVertices()[1]->getId();
-//			idarray[2]=cell.getVertices()[2]->getId();
-//			sort3ints(idarray);
-//			tempStream1<<idarray[0]<<','<<idarray[1]<<','<<idarray[2];
-//			facid=tempStream1.str();
-//			listOfFaces.back().setId(facid);
-//			faceMap.insert(pair<string,deque<Face>::pointer>(facid,&listOfFaces.back()));
-//			listOfFaces.back().addEdges(cell.getEdges()[0],cell.getEdges()[1],cell.getEdges()[2]);
-//			cell.addFace(&listOfFaces.back());
-//			//cell.getFaces()[0].addVertices(&cell.getVertices()[0],&cell.getVertices()[1],&cell.getVertices()[2]);
-//			//cell.getFaces()[0].addEdges(&cell.getEdges()[0],&cell.getEdges()[1],&cell.getEdges()[2]);
-//			cell.getFaces()[0]->incrNumOfOpenFaces();
-//		}
-//		if(!twoVertices && winnerVertex)
-//		{
-//			newEdge1 = new Edge();
-//			newEdge2 = new Edge();
-//			newEdge3 = new Edge();
-//			map<string,deque<Face>::pointer>::iterator fmapit;
-//			int idarray[3];
-//			int cellIdArray[4];
-//			string facid;
-//			stringstream tempStream1, tempStream2, tempStream3, cellidstream;
-//			listOfEdges.push_back(*newEdge1);
-//			listOfEdges.back().setVertices(cell.getVertices()[0],cell.getVertices()[3]);
-//			cell.addEdge(&listOfEdges.back());
-//			listOfEdges.push_back(*newEdge2);
-//			listOfEdges.back().setVertices(cell.getVertices()[1],cell.getVertices()[3]);
-//			cell.addEdge(&listOfEdges.back());
-//			listOfEdges.push_back(*newEdge3);
-//			listOfEdges.back().setVertices(cell.getVertices()[2],cell.getVertices()[3]);
-//			cell.addEdge(&listOfEdges.back());
-////			cell.getEdges()[3].setVertices(&cell.getVertices()[0],&cell.getVertices()[3]);
-////			cell.getEdges()[4].setVertices(&cell.getVertices()[1],&cell.getVertices()[3]);
-////			cell.getEdges()[5].setVertices(&cell.getVertices()[2],&cell.getVertices()[3]);
-//			idarray[0]=cell.getVertices()[0]->getId();
-//			idarray[1]=cell.getVertices()[1]->getId();
-//			idarray[2]=cell.getVertices()[3]->getId();
-//			sort3ints(idarray);
-//			tempStream1<<idarray[0]<<','<<idarray[1]<<','<<idarray[2];
-//			facid=tempStream1.str();
-//			cell.getFaces().back()->decrNumOfOpenFaces();
-////			if(facid=="17,32,33")
-////				cout<<"found culprit"<<endl;
-//			fmapit=faceMap.find(facid);
-//			if(fmapit==faceMap.end())
-//			{
-//				Face* newFace1 = new Face();
-//				listOfFaces.push_back(*newFace1);
-//				listOfFaces.back().addVertices(cell.getVertices()[0],cell.getVertices()[1],cell.getVertices()[3]);
-//				listOfFaces.back().setId(facid);
-//				faceMap.insert(pair<string,deque<Face>::pointer>(facid,&listOfFaces.back()));
-//				cell.addFace(&listOfFaces.back());
-//				cell.getFaces().back()->incrNumOfOpenFaces();
-//			}
-//			else
-//			{
-//				cell.addFace((*fmapit).second);
-//				(*fmapit).second->decrNumOfOpenFaces();
-//			}
-//			//tempStream<<cell.getVertices()[1]->getId()<<','<<cell.getVertices()[2]->getId()<<','<<cell.getVertices()[3]->getId();
-//			idarray[0]=cell.getVertices()[1]->getId();
-//			idarray[1]=cell.getVertices()[2]->getId();
-//			idarray[2]=cell.getVertices()[3]->getId();
-//			sort3ints(idarray);
-//			tempStream2<<idarray[0]<<','<<idarray[1]<<','<<idarray[2];
-//			facid=tempStream2.str();
-////			if(facid=="17,32,33")
-////				cout<<"found culprit"<<endl;
-//			fmapit=faceMap.find(facid);
-//			if(fmapit==faceMap.end())
-//			{
-//				Face* newFace2 = new Face();
-//				listOfFaces.push_back(*newFace2);
-//				listOfFaces.back().addVertices(cell.getVertices()[1],cell.getVertices()[2],cell.getVertices()[3]);
-//				listOfFaces.back().setId(facid);
-//				faceMap.insert(pair<string,deque<Face>::pointer>(facid,&listOfFaces.back()));
-//				cell.addFace(&listOfFaces.back());
-//				cell.getFaces().back()->incrNumOfOpenFaces();
-//
-//			}
-//			else
-//			{
-//				cell.addFace((*fmapit).second);
-//				(*fmapit).second->decrNumOfOpenFaces();
-//			}
-//			//tempStream<<cell.getVertices()[2]->getId()<<','<<cell.getVertices()[0]->getId()<<','<<cell.getVertices()[3]->getId();
-//			idarray[0]=cell.getVertices()[2]->getId();
-//			idarray[1]=cell.getVertices()[0]->getId();
-//			idarray[2]=cell.getVertices()[3]->getId();
-//			sort3ints(idarray);
-//			tempStream3<<idarray[0]<<','<<idarray[1]<<','<<idarray[2];
-//			facid=tempStream3.str();
-////			if(facid=="17,32,33")
-////				cout<<"found culprit"<<endl;
-//			fmapit=faceMap.find(facid);
-//			if(fmapit==faceMap.end())
-//			{
-//				Face* newFace3 = new Face();
-//				listOfFaces.push_back(*newFace3);
-//				listOfFaces.back().addVertices(cell.getVertices()[2],cell.getVertices()[0],cell.getVertices()[3]);
-//				listOfFaces.back().setId(facid);
-//				faceMap.insert(pair<string,deque<Face>::pointer>(facid,&listOfFaces.back()));
-//				cell.addFace(&listOfFaces.back());
-//				cell.getFaces().back()->incrNumOfOpenFaces();
-//			}
-//			else
-//			{
-//				cell.addFace((*fmapit).second);
-//				(*fmapit).second->decrNumOfOpenFaces();
-//			}
-////			cell.getFaces()[1].addVertices(&cell.getVertices()[0],&cell.getVertices()[1],&cell.getVertices()[3]);
-////			cell.getFaces()[2].addVertices(&cell.getVertices()[1],&cell.getVertices()[2],&cell.getVertices()[3]);
-////			cell.getFaces()[3].addVertices(&cell.getVertices()[2],&cell.getVertices()[0],&cell.getVertices()[3]);
-//
-//			cell.getFaces()[1]->addEdges(cell.getEdges()[0],cell.getEdges()[4],cell.getEdges()[3]);
-//			cell.getFaces()[2]->addEdges(cell.getEdges()[1],cell.getEdges()[5],cell.getEdges()[4]);
-//			cell.getFaces()[3]->addEdges(cell.getEdges()[2],cell.getEdges()[3],cell.getEdges()[5]);
-//
-////			cell.getFaces()[1]->incrNumOfOpenFaces();
-////			cell.getFaces()[2]->incrNumOfOpenFaces();
-////			cell.getFaces()[3]->incrNumOfOpenFaces();
-//
-//			cell.getFaces()[0]->addOppositeVertex(cell.getVertices()[3]);
-//			cell.getFaces()[1]->addOppositeVertex(cell.getVertices()[2]);
-//			cell.getFaces()[2]->addOppositeVertex(cell.getVertices()[0]);
-//			cell.getFaces()[3]->addOppositeVertex(cell.getVertices()[1]);
-//
-//			for(int i=0; i<4; i++)
-//				cellIdArray[i]=cell.getVertices()[i]->getId();
-//			sort4ints(cellIdArray);
-//			cellidstream<<cellIdArray[0]<<','<<cellIdArray[1]<<','<<cellIdArray[2]<<','<<cellIdArray[3];
-//			cell.setId(cellidstream.str());
-//		}
-//	}
+//	model.drawEdges();
+//	glutSwapBuffers();
 	return true;
 }
-
-//void Solid::confirmWinnerVertex(deque<Cell>::reference cell,Vertex*& winnerVertex,deque<deque<deque<deque<deque<Vertex>::pointer > > > >& grid)
-//{
-//	unsigned int stepSize = ceil(cell.getCircumRadius());
-//	double minRadius = cell.getCircumRadius();
-//	double tempRadius = cell.getCircumRadius();
-//	double newCenterRadius[4];
-//	trippleBool tstSphrReturn;
-//	unsigned int centerGrid[3];
-//	int *vertexGridCoords;
-//	bool possibleFail=false;
-//	vertexGridCoords = (int*)malloc(sizeof(int)*4);
-//	vertexGridCoords = (int*)cell.getVertices()[0]->sparePtr;
-//	centerGrid[0]=vertexGridCoords[0]+(floor(cell.getCircumCenter()[0]/STEPSIZE)-floor(cell.getVertices()[0]->getXCoord()/STEPSIZE));
-//	centerGrid[1]=vertexGridCoords[1]+(floor(cell.getCircumCenter()[1]/STEPSIZE)-floor(cell.getVertices()[0]->getYCoord()/STEPSIZE));
-//	centerGrid[2]=vertexGridCoords[2]+(floor(cell.getCircumCenter()[2]/STEPSIZE)-floor(cell.getVertices()[0]->getZCoord()/STEPSIZE));
-//
-//	for(unsigned int i = (centerGrid[0]<stepSize)?0:centerGrid[0]-stepSize; i<grid.size() && i<=centerGrid[0]+stepSize; i++)
-//		for(unsigned int j=(centerGrid[1]<stepSize)?0:centerGrid[1]-stepSize; j<grid[i].size() && j<=centerGrid[1]+stepSize ;j++)
-//			for(unsigned int k=(centerGrid[2]<stepSize)?0:centerGrid[2]-stepSize; k<grid[i][j].size() && k<=centerGrid[2]+stepSize; k++)
-//			{
-//				if(grid[i][j][k].size()==0)
-//					continue;
-//				else
-//				{
-//					for(unsigned int indexer=0; indexer<grid[i][j][k].size(); indexer++)
-//					{
-//						cout<<"rechk\ttested vertex"<<grid[i][j][k][indexer]->getId()<<endl;
-//						if( (cell.getVertexListSize()==2 && cell.testCircumCircle(*grid[i][j][k][indexer],newCenterRadius))
-//						  ||(cell.getVertexListSize()==3 && (tstSphrReturn=cell.testCircumSphere(*grid[i][j][k][indexer],newCenterRadius))))
-//						{
-//							tempRadius = newCenterRadius[3];
-//							if(tempRadius<minRadius)
-//							{
-//								if( (cell.getNeighListSize()>0 && !cell.checkOrientation(*grid[i][j][k][indexer]))
-//								 || (tstSphrReturn==midstate_val))
-//								{
-//									possibleFail=true;
-//									minRadius=tempRadius;
-//								}
-//								else
-//								{
-//									possibleFail=false;
-//									minRadius=tempRadius;
-//									winnerVertex=grid[i][j][k][indexer];
-//									cell.setCircumCenter(newCenterRadius);
-//									cell.setCircumRadius((newCenterRadius[3]>0)?newCenterRadius[3]:newCenterRadius[3]*-1);
-//								}
-//							}
-//						}
-//					}
-//				}
-//			}
-//	if(possibleFail)
-//		winnerVertex=NULL;
-//}
-

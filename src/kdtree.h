@@ -27,6 +27,8 @@ public:
 	void    setRightChild(treeNode*);
 	void    setKeyValue(double);
 	void    setRegion(double[2][3]);
+	double*	getLowRegion();
+	double* getHighRegion();
 	void    setDummy();
 	void    attachPtObject(deque<Vertex>::pointer);
 	bool    isLeaf();

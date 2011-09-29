@@ -66,6 +66,8 @@ public:
 	void setVertices(deque<Vertex>::pointer, deque<Vertex>::pointer);
 	Vertex** getVertex();
 	bool testCircumCircle(deque<Vertex>::pointer, double[4]);
+	double testCircumCircleAdaptive(Vertex&, Vertex&);
+	bool check2DOrientationAdaptive(Vertex&);
 private:
 	vector<Vertex>::pointer vertices[2];
 };
@@ -88,9 +90,10 @@ public:
 	void addOppositeVertex(deque<Vertex>::pointer);
 	void addNormalDir(double[3]);
 	bool testCircumSphere(Vertex&,double[4]);
+	double testCircumSphereAdaptive(Vertex&,Vertex&);
 	deque<Vertex>::pointer* getVertices();
 	deque<Edge>::pointer* getEdges();
-	void setNeighbourCell(deque<Cell>::pointer);
+	bool setNeighbourCell(deque<Cell>::pointer);
 	void setNeighCell1(deque<Cell>::pointer);
 	void setNeighCell2(deque<Cell>::pointer);
 	Cell* getNeighCell1();
@@ -139,7 +142,7 @@ public:
 	void setId(string);
 	string getId();
 	void addVertex(deque<Vertex>::pointer);
-	void addFace(deque<Face>::pointer);
+	bool addFace(deque<Face>::pointer);
 	//void addNeighbour(deque<Cell>::pointer, deque<Face>::pointer);
 	void addEdge(deque<Edge>::pointer);
 	size_t getVertexListSize();
@@ -151,11 +154,14 @@ public:
 	deque<deque<Face>::pointer>& getFaces();
 	//multimap<deque<Cell>::pointer, deque<Face>::pointer>& getNeighbours();
 	bool testCircumCircle(deque<Vertex>::pointer,double[4]);
+	double testCircumCircleAdaptive(Vertex& v1, Vertex& v2);
 	trippleBool testCircumSphere(Vertex&,double[4]);
+	double testCircumSphereAdaptive(Vertex&,Vertex&);
 	void addFEVs(deque<Face>::pointer);
 	void delFEVs(deque<Face>::pointer);
 	bool checkOrientation(Vertex&);
-	bool checkOrientationAdaptive(Vertex&);
+	bool check3DOrientationAdaptive(Vertex&);
+	bool check2DOrientationAdaptive(Vertex&);
 	void setCircumCenter(double[3]);
 	void setCircumRadius(double);
 	double getCircumRadius();
@@ -174,6 +180,7 @@ private:
 class Solid	{
 public:
 	void populateVertices(deque<Vertex>&);
+	void populateVerticesRandom();
 	void delaunize();
 	//void sortVertices(axisToSort, deque<Vertex>, deque<Vertex>);
 	//void dewall(axisToSort,deque<Vertex>&,map<string,deque<Face>::pointer>&, deque<deque<deque<deque<deque<Vertex>::pointer > > > >&);

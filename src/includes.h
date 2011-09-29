@@ -106,7 +106,10 @@ enum trippleBool{ false_val, true_val, midstate_val};
 
 double exactinit();
 double orient3d(double *pa, double *pb, double *pc, double *pd);
+double orient2d(double*, double*, double*);
 double insphere(double *pa, double *pb, double *pc, double *pd, double *pe);
+double incircle(double*, double*, double*, double*);
+
 inline double vector3dLenSq(double vector[3])
 {
 	return vector[0]*vector[0]+vector[1]*vector[1]+vector[2]*vector[2];
@@ -262,5 +265,9 @@ inline void printMap(map<string,deque<Face>::pointer>& mapToPrint)
 	}
 	cout<<endl;
 	cout.flush();
+}
+inline double randnum(void)           // random number in range [0,1]
+{
+	return ((double)rand())/((double)RAND_MAX+double(1.0));
 }
 #endif /* INCLUDES_H_ */

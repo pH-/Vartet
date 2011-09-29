@@ -178,6 +178,47 @@ bool Edge::testCircumCircle(deque<Vertex>::pointer v, double centerRadius[4])
 	centerRadius[3]=sqrt(pow((v->getXCoord()-centerRadius[0]),2) + pow((v->getYCoord()-centerRadius[1]),2) +pow((v->getZCoord()-centerRadius[2]),2));
 	return true;
 }
+
+double Edge::testCircumCircleAdaptive(Vertex& v1, Vertex& v2)
+{
+	double p[2][3], c[3], d[3];
+	for(int i=0; i<2; i++)
+	{
+		for(int j=0; j<3; j++)
+		{
+			p[i][j]=vertices[i]->getCoord((axisToSort)j);
+		}
+	}
+	for(int i=0; i<3; i++)
+	{
+		c[i]=v1.getCoord((axisToSort)i);
+		d[i]=v2.getCoord((axisToSort)i);
+	}
+	if(orient3d(p[0],p[1],c,d))
+		return false;
+	else
+	{
+		double centerRadius[4];
+		testCircumCircle(&v1,centerRadius);
+		return(v2.getSqDistance(centerRadius) < centerRadius[3]);
+	}
+}
+
+bool Edge::check2DOrientationAdaptive(Vertex& v2)
+{
+	double p[2][3], c[3];
+	for(int i=0; i<2; i++)
+	{
+		for(int j=0; j<3; j++)
+		{
+			p[i][j]=vertices[i]->getCoord((axisToSort)j);
+		}
+	}
+	for(int i=0; i<3; i++)
+		c[i]=v2.getCoord((axisToSort)i);
+
+	return ((((p[0][0]-p[1][0]) - (p[0][2]-p[1][2])) * ((c[1]-p[1][1])-(c[2]-p[1][2]))) - (((c[0]-p[1][0]) - (c[2]-p[1][2])) * ((p[0][1]-p[1][1])-(p[0][2]-p[1][2]))));
+}
 ///Plc Edge class
 
 PlcEdge::PlcEdge(Vertex *vertex1, Vertex *vertex2)
@@ -319,6 +360,23 @@ bool Face::testCircumSphere(Vertex& v, double centerRadius[4])
 		return false;
 
 }
+double Face::testCircumSphereAdaptive(Vertex& v1, Vertex& v2)
+{
+	double p[3][3], d[3],e[3];
+	for(int i=0; i<3; i++)
+	{
+		for(int j=0; j<3; j++)
+		{
+			p[i][j]=vertices[i]->getCoord((axisToSort)j);
+		}
+	}
+	for(int i=0; i<3; i++)
+	{
+		d[i]=v1.getCoord((axisToSort)i);
+		e[i]=v2.getCoord((axisToSort)i);
+	}
+	return insphere(p[0],p[1],p[2],d,e);
+}
 
 deque<Vertex>::pointer* Face::getVertices()
 {
@@ -330,15 +388,18 @@ deque<Edge>::pointer* Face::getEdges()
 	return edges;
 }
 
-void Face::setNeighbourCell(deque<Cell>::pointer pCell)
+bool Face::setNeighbourCell(deque<Cell>::pointer pCell)
 {
 	if(!cell1)
 		cell1=pCell;
 	else if(!cell2)
 		cell2=pCell;
 	else
+	{
 		cout<<"ERROR while setting neighbour"<<endl;
-	cout.flush();
+		return false;
+	}
+	return true;
 }
 
 void Face::setNeighCell1(deque<Cell>::pointer cellPtr)
@@ -446,10 +507,10 @@ void Cell::addEdge(deque<Edge>::pointer edge)
 	edges.push_back(edge);
 }
 
-void Cell::addFace(deque<Face>::pointer face)
+bool Cell::addFace(deque<Face>::pointer face)
 {
 	faces.push_back(face);
-	faces.back()->setNeighbourCell(this);
+	return faces.back()->setNeighbourCell(this);
 }
 
 //void Cell::addNeighbour(deque<Cell>::pointer cell, deque<Face>::pointer face)
@@ -509,6 +570,11 @@ bool Cell::testCircumCircle(deque<Vertex>::pointer v, double centerRadius[4])
 	return edges[0]->testCircumCircle(v,centerRadius);
 }
 
+double Cell::testCircumCircleAdaptive(Vertex& v1, Vertex& v2 )
+{
+	return edges[0]->testCircumCircleAdaptive(v1,v2);
+}
+
 trippleBool Cell::testCircumSphere(Vertex& v, double centerRadius[4])
 {
 	if(faces[0]->testCircumSphere(v,centerRadius))
@@ -533,7 +599,7 @@ trippleBool Cell::testCircumSphere(Vertex& v, double centerRadius[4])
 //					return midstate_val;
 			}
 			//if(!this->checkOrientation(ctr))
-			if(!this->checkOrientationAdaptive(ctr))
+			if(!this->check3DOrientationAdaptive(ctr))
 			{
 				centerRadius[3]*=-1;
 			}
@@ -543,7 +609,10 @@ trippleBool Cell::testCircumSphere(Vertex& v, double centerRadius[4])
 	else
 		return false_val;
 }
-
+double Cell::testCircumSphereAdaptive(Vertex& v1, Vertex& v2)
+{
+	return faces[0]->testCircumSphereAdaptive(v1,v2);
+}
 void Cell::addFEVs(deque<Face>::pointer face)
 {
 //	if(face->getId()=="17,32,33")
@@ -588,15 +657,39 @@ bool Cell::checkOrientation(Vertex& v2)
 		return false;
 }
 
-bool Cell::checkOrientationAdaptive(Vertex& v2)
+bool Cell::check3DOrientationAdaptive(Vertex& v2)
 {
 	Vertex *oppVertex;
-	if(faces.back()->getNeighCell1()==this)
-		oppVertex=faces.back()->getOppositeVertex2();
-	else if(faces.back()->getNeighCell2()==this)
-		oppVertex=faces.back()->getOppositeVertex1();
+	for(int i=0; i<3; i++)
+	{
+		if(faces.back()->getVertices()[i]->getId()==v2.getId())
+			return false;
+	}
+	if(this->getNeighListSize()>0)
+	{
+		if(faces.back()->getNeighCell1()==this)
+			oppVertex=faces.back()->getOppositeVertex2();
+		else if(faces.back()->getNeighCell2()==this)
+			oppVertex=faces.back()->getOppositeVertex1();
+		else
+			cout<<"possible ERROR ERROR::"<<endl;
+	}
 	else
-		cout<<"ERROR ERROR::"<<endl;
+	{
+		double p[3][3], d1[3];
+		for(int i=0; i<3; i++)
+		{
+			for(int j=0; j<3; j++)
+			{
+				p[i][j] = faces.back()->getVertices()[i]->getCoord((axisToSort)j);
+			}
+		}
+		for(int i=0;i<3; i++)
+		{
+			d1[i] = v2.getCoord((axisToSort)i);
+		}
+		return orient3d(p[0],p[1],p[2],d1);
+	}
 	double p[3][3], d1[3], d2[3];
 	for(int i=0; i<3; i++)
 	{
@@ -615,7 +708,15 @@ bool Cell::checkOrientationAdaptive(Vertex& v2)
 	else
 		return false;
 }
-
+bool Cell::check2DOrientationAdaptive(Vertex& v2)
+{
+	for(int i =0; i<2; i++)
+	{
+		if(edges.back()->getVertex()[i]->getId() == v2.getId())
+			return false;
+	}
+	return edges[0]->check2DOrientationAdaptive(v2);
+}
 void Cell::setCircumCenter(double circumCenter[3])
 {
 	for(int i=0; i<3; i++)
@@ -652,6 +753,19 @@ void Solid::populateVertices(deque<Vertex>& vertexList)
 	for(vit=vertexList.begin(); vit!=vertexList.end(); vit++, ++i)
 	{
 		listOfVertices.push_back(*vit);
+		listOfVertices.back().setId(i);
+	}
+}
+void Solid::populateVerticesRandom()
+{
+	double x,y,z;
+	for(int i=0;i<10;i++)
+	{
+		x= (randnum()-0.5)*20;
+		y= (randnum()-0.5)*20;
+		z= (randnum()-0.5)*20;
+		Vertex* newVertex = new Vertex(x,y,z,0);
+		listOfVertices.push_back(*newVertex);
 		listOfVertices.back().setId(i);
 	}
 }
@@ -722,8 +836,8 @@ void Solid::drawEdges()
 		if(showCircle)
 		{
 			center=listOfCells[i].getCircumCenter();
-			if(listOfCells[i].getVertexListSize()==4)
-			{
+//			if(listOfCells[i].getVertexListSize()==4)
+//			{
 				glPushMatrix();
 				glTranslated(center[0]/resolution,center[1]/resolution,center[2]/resolution);
 				if(wire)
@@ -731,20 +845,20 @@ void Solid::drawEdges()
 				else
 					glutSolidSphere(listOfCells[i].getCircumRadius()/resolution,40,40);
 				glPopMatrix();
-			}
-			else
-			{
-				glPushMatrix();
-				glBegin(GL_LINE_LOOP);
-				glTranslated(center[0]/resolution,center[1]/resolution,center[2]/resolution);
-				for (int ic=0; ic < 360; ic++)
-				{
-					double degInRad = ic*(3.14159/180);
-					glVertex3d(cos(degInRad)*(listOfCells[i].getCircumRadius()/resolution),center[1],sin(degInRad)*(listOfCells[i].getCircumRadius()/resolution));
-				}
-				glEnd();
-				glPopMatrix();
-			}
+//			}
+//			else
+//			{
+//				glPushMatrix();
+//				glBegin(GL_LINE_LOOP);
+//				glTranslated(center[0]/resolution,center[1]/resolution,center[2]/resolution);
+//				for (int ic=0; ic < 360; ic++)
+//				{
+//					double degInRad = ic*(3.14159/180);
+//					glVertex3d(cos(degInRad)*(listOfCells[i].getCircumRadius()/resolution),center[1],sin(degInRad)*(listOfCells[i].getCircumRadius()/resolution));
+//				}
+//				glEnd();
+//				glPopMatrix();
+//			}
 		}
 	}
 }
