@@ -7,6 +7,8 @@
 #include "includes.h"
 using namespace qhull;
 //#define Print
+
+
 //vertex functions
 void convexHull4d::printMap()
 {
@@ -19,18 +21,6 @@ void convexHull4d::printMap()
 	for(map<long,vertex4d>::iterator vit= verticesOfHull.begin(); vit!= verticesOfHull.end(); vit++)
 	{
 		outfile<<vit->second.getCoords()[0]<<" "<<vit->second.getCoords()[1]<<" "<<vit->second.getCoords()[2]<<"\r\n";
-	}
-	for(map<long,ridge>::iterator rit = tempRidges.begin(); rit!=tempRidges.end(); rit++)
-	{
-//		outfile<<"4 ";
-//		i=0;
-//		for(deque<long>::iterator vit = rit->second.getVertexList().begin(); vit!= rit->second.getVertexList().end(); vit++,i++)
-//		{
-//			if(i<2)
-//				outfile<<*vit<<" ";
-//			else
-//				outfile<<*vit<<endl;
-//		}
 	}
 	for(mit=tempFacets.begin(); mit!=tempFacets.end(); mit++,i++)
 	{
@@ -161,16 +151,7 @@ void ridge::setId(long id)
 {
 	ridgeId = id;
 }
-//void ridge::setId(const vector<long>* vertexIds)
-//{
-//	long chksum =1;
-//	for(unsigned int i=0; i<(*vertexIds).size(); i++)
-//	{
-//		long eachNum=(*vertexIds)[i];
-//		chksum = (31*chksum+eachNum)%1000003;
-//	}
-//	ridgeId = chksum;
-//}
+
 //facet functions
 facet::facet()
 {
@@ -214,11 +195,6 @@ void facet::setNormal(double normalVector[4])
 	for(int i=0; i<4; i++)
 		normal[i]=normalVector[i];
 }
-
-//void facet::setOffset(double offsetVector[4])
-//{
-//	ASSIGN4D(offset,offsetVector);
-//}
 
 void facet::putInBucket(long v)
 {
@@ -513,6 +489,7 @@ void convexHull4d::makeHull()
 //		{
 //			cout<<"discarded facets:"<<(*fit)<<endl;
 //		}
+
 //delete discarded facets
 		deleteDiscardedFacets(discardedFacets, furthest, bucketLessVertices, horizonRidges);
 //create new facets
@@ -540,21 +517,11 @@ void convexHull4d::createNewFacets(deque<long>& horizonRidges, vertex4d* furthes
 	{
 		vector<long> vertexIndices;
 		vector<long> ridgeIdsForFacet(4);
-//			cout<<"\tsomevertices"<<endl;
-//			cout<<tempRidges.find((*hrit))->second.getVertexList()[0]<<endl;
-//			cout<<tempRidges.find((*hrit))->second.getVertexList()[1]<<endl;
-//			cout<<tempRidges.find((*hrit))->second.getVertexList()[2]<<endl;
 		vertexIndices.push_back(tempRidges.find((*hrit))->second.getVertexList()[0]);
 		vertexIndices.push_back(tempRidges.find((*hrit))->second.getVertexList()[1]);
 		vertexIndices.push_back(tempRidges.find((*hrit))->second.getVertexList()[2]);
 		vertexIndices.push_back(furthest->getId());
 		sort(vertexIndices.begin(), vertexIndices.end());
-//		cout<<"Vertices of Facet:";
-//		for(unsigned int i=0; i<vertexIndices.size(); i++)
-//		{
-//			cout<<vertexIndices[i]<<",";
-//		}
-//		cout<<endl;
 		long facetId = generateId(&vertexIndices);
 		vertexIndices.clear();
 		facet *newFacet = new facet();
@@ -587,12 +554,6 @@ void convexHull4d::createNewFacets(deque<long>& horizonRidges, vertex4d* furthes
 			ridge *newRidge;
 //			newRidge->setId(&vertexIndices);
 			long tempId = generateId(&vertexIndices);
-//			cout<<"newRidge id:"<<tempId<<endl<<"Vertices of Ridge:";
-//			for(unsigned int i=0; i<vertexIndices.size(); i++)
-//			{
-//				cout<<vertexIndices[i]<<",";
-//			}
-//			cout<<endl;
 
 			if(tempRidges.find(tempId)==tempRidges.end())
 			{
@@ -607,10 +568,8 @@ void convexHull4d::createNewFacets(deque<long>& horizonRidges, vertex4d* furthes
 			}
 			else
 			{
-//				free(newRidge);
 				newRidge = &tempRidges.find(tempId)->second;
 			}
-//			newRidge = &tempRidges.find(newRidge->getId())->second;
 			vertexIndices.clear();
 			if(newRidge->getNeighbour1()==0)
 				newRidge->setNeighbour1(newFacet->getId());
@@ -633,7 +592,6 @@ void convexHull4d::createNewFacets(deque<long>& horizonRidges, vertex4d* furthes
 				newFacet->putInBucket((*blvit));
 				verticesOfHull.find(*blvit)->second.insertVisibleFacet(newFacet->getId());
 				verticesOfHull.find(*blvit)->second.setAssignedToBucket(true);
-//					bucketLessVertices.erase(blvit);
 			}
 		}
 		setFurthestPoint(newFacet->getId());
@@ -664,7 +622,6 @@ void convexHull4d::deleteDiscardedFacets(deque<long>& discardedFacets, vertex4d*
 		}
 		for(rit = tempFacets.find((*fit))->second.getFacetRidges().begin(); rit!=tempFacets.find((*fit))->second.getFacetRidges().end(); rit++)
 		{
-//				cout<<"ridge to delete:"<<*rit<<endl;
 			if(find(horizonRidges.begin(), horizonRidges.end(), (*rit))==horizonRidges.end() && tempRidges.find(*rit)!=tempRidges.end())
 			{
 				tempRidges.find((*rit))->second.getVertexList().clear();
@@ -710,18 +667,14 @@ void convexHull4d::setVisibleFacetsForVertex(long vertexId)
 {
 	for(deque<long>::iterator fit = verticesOfHull.find(vertexId)->second.getVisibleFacets().begin(); fit!=verticesOfHull.find(vertexId)->second.getVisibleFacets().end(); fit++)
 	{
-//		cout<<"curr num of visible facets:"<<verticesOfHull.find(vertexId)->second.getVisibleFacets().size()<<endl;
 		deque<long>::iterator rit;
 		for(rit = tempFacets.find((*fit))->second.getFacetRidges().begin() ; rit!=tempFacets.find((*fit))->second.getFacetRidges().end(); rit++)
 		{
 			long neigh = tempRidges.find((*rit))->second.getNeighbour1()==(*fit)?tempRidges.find((*rit))->second.getNeighbour2():tempRidges.find((*rit))->second.getNeighbour1();
-//			if(neigh==955364)
-//				cout<<"chek here"<<endl;
 			if(verticesOfHull.find(vertexId)->second.isAbove(&tempFacets.find(neigh)->second) &&
 			   find(verticesOfHull.find(vertexId)->second.getVisibleFacets().begin(), verticesOfHull.find(vertexId)->second.getVisibleFacets().end(),(neigh))==verticesOfHull.find(vertexId)->second.getVisibleFacets().end())
 			{
 				verticesOfHull.find(vertexId)->second.insertVisibleFacet(neigh);
-//				discardedFacet.push_back(neigh);
 			}
 		}
 	}
@@ -750,7 +703,6 @@ void convexHull4d::finalCleaning()
 	double refVector[4] = {0,0,0,-1};
 	for(facetIter = tempFacets.begin(); facetIter!=tempFacets.end(); facetIter++)
 	{
-//		double *normal = facetIter->second.getNormal();
 		if(DOT(facetIter->second.getNormal(),refVector)<0)
 		{
 			cout<<"found an opposite facet."<<endl;
@@ -769,7 +721,6 @@ void convexHull4d::finalCleaning()
 		{
 			if(tempRidges.find(*rit)==tempRidges.end())
 				continue;
-//			cout<<"ridge to delete:"<<*rit<<endl;
 			bool isFirstNeighbour = tempRidges.find((*rit))->second.getNeighbour1()==(*fit);
 			long neigh;
 			if(isFirstNeighbour)
@@ -791,12 +742,10 @@ void convexHull4d::initBucketing()
 {
 	map<long,vertex4d>::iterator v4dit;
 	map<long,facet>::iterator tempHullit;
-//	cout<<"numfacets:"<<tempFacets.size()<<endl;
 	if(tempFacets.size()>4)
 	{
 		for(v4dit = verticesOfHull.begin();  v4dit!=verticesOfHull.end(); v4dit++)
 		{
-//			cout<<"vertex assignment status"<<v4dit->second.getBucketAssignmentStatus()<<endl;
 			for(tempHullit=tempFacets.begin(); !v4dit->second.getBucketAssignmentStatus() && tempHullit!=tempFacets.end(); tempHullit++)
 			{
 				if(v4dit->second.isAbove(&((*tempHullit).second)))

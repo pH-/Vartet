@@ -21,16 +21,12 @@ public:
 	bool isAbove(facet*);
 	void setAssignedToBucket(bool);
 	bool getBucketAssignmentStatus();
-//	deque<deque<facet>::pointer>& getVisibleFacets();
 	deque<long>& getVisibleFacets();
 	long getId();
-//	void insertVisibleFacet(deque<facet>::pointer);
 	void insertVisibleFacet(long);
 	void setVertexId(long);
-//	void setCoords();
 private:
 	double coords4d[4];
-//	deque<deque<facet>::pointer> visibleFacets;
 	deque<long> visibleFacets;
 	bool bucketStatus;
 	long vertexId;
@@ -39,23 +35,16 @@ class ridge
 {
 public:
 	ridge();
-//	facet* getNeighbour1();
-//	facet* getNeighbour2();
 	long getNeighbour1();
 	long getNeighbour2();
-//	deque<deque<vertex4d>::pointer>& getVertexList();
 	deque<long>& getVertexList();
 	long getId();
-//	void insertVertex(deque<vertex4d>::pointer);
 	void insertVertex(long);
 	void setNeighbour1(long);
 	void setNeighbour2(long);
 	void setId(long);
-//	void setId(const vector<long>*);
 private:
-//	deque<deque<vertex4d>::pointer> ridgeVertices;
 	deque<long> ridgeVertices;
-//	facet *neighbour1,*neighbour2;
 	long neighFacet1, neighFacet2;
 	long ridgeId;
 };
@@ -73,23 +62,18 @@ public:
 	void 	setNormal(double[4]);
 	void	putInBucket(long);
 	void	insertRidge(long);
-//	void	calcNormOffset(deque<vertex4d>::pointer[4], double[4]);
 	void 	calcNormOffset(const deque<vertex4d>::pointer*, double* );
 	void	setRidges(long[4]);
 	void 	setId(long);
-//	void    setId(const vector<long>*);
 	void	setFurthestPoint(long);
 
 private:
 	double normal[4];
 	double offset;
-//	vertex4d *furthestPoint;
 	long furthestPoint;
 	long id;
-//	deque<deque<ridge>::pointer > facetRidges;
 	deque<long> vertexIndices;
 	deque<long> facetRidges;
-//	deque<deque<vertex4d>::pointer > bucket;
 	deque<long> bucket;
 };
 
@@ -117,11 +101,8 @@ private:
 	void calcCentroid();
 	long generateId(const vector<long>*);
 	void printMap();
-//	deque<vertex4d> verticesOfHull;
 	double centroid[4];
 	map<long,vertex4d> verticesOfHull;
-//	deque<ridge> ridgesOfHull;
-//	deque<facet> facetsOfHull;
 	map<long,facet> tempFacets;
 	map<long,ridge> tempRidges;
 	map<string,long> idMap;
