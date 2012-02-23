@@ -7,6 +7,7 @@
 
 #ifndef STRUCTURE_H_
 #define STRUCTURE_H_
+namespace qhull{class convexHull4d;}
 
 using namespace std;
 class Face;
@@ -199,6 +200,7 @@ protected:
 	deque<Vertex>	verticesXsort;
 	deque<Vertex>	verticesYsort;
 	deque<Vertex>	verticesZsort;
+	qhull::convexHull4d *hull4d;
 };
 
 class Plc {

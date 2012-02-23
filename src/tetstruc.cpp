@@ -14,6 +14,7 @@ extern bool showCircle;
 extern bool wire;
 int counter =0;
 
+class convexHull4d;
 ///Global Functions
 
 bool sortVertexX(Vertex v1, Vertex v2) { return (v1.getXCoord()<v2.getXCoord());}
@@ -759,14 +760,21 @@ void Solid::populateVertices(deque<Vertex>& vertexList)
 void Solid::populateVerticesRandom()
 {
 	double x,y,z;
-	for(int i=0;i<10;i++)
+	cout<<"vertices generated:"<<endl;
+	for(int i=0;i<5000;i++)
 	{
 		x= (randnum()-0.5)*20;
 		y= (randnum()-0.5)*20;
 		z= (randnum()-0.5)*20;
+		if(x*x+y*y+z*z>=10)
+		{
+			i--;
+			continue;
+		}
 		Vertex* newVertex = new Vertex(x,y,z,0);
 		listOfVertices.push_back(*newVertex);
 		listOfVertices.back().setId(i);
+		cout<<x<<","<<y<<","<<z<<","<<x*x+y*y+z*z<<";"<<endl;
 	}
 }
 void Solid::delaunize()
@@ -776,7 +784,11 @@ void Solid::delaunize()
 	map<string,deque<Face>::pointer> afl;
 	kdtree *kdTree = new kdtree();
 	kdTree->buildTree(listOfVertices);
-	dewall(afl,kdTree,kdTree);
+//	qhull::convexHull4d *
+	hull4d = new qhull::convexHull4d();
+	hull4d->populateVerticesList(listOfVertices);
+	hull4d->makeHull();
+//	dewall(afl,kdTree,kdTree);
 }
 
 void Solid::drawEdges()
@@ -784,6 +796,8 @@ void Solid::drawEdges()
 	deque<deque<Edge>::pointer>::iterator eit;
 	//deque<deque<Face>::pointer>::iterator fit;
 	deque<Vertex>::iterator vit;
+	map<long,qhull::vertex4d>::iterator v4it;
+	map<long,qhull::ridge>::iterator rit;
 	double resolution=1.0;
 //	for(int i=0; i<faceToShow; i++)
 //	{
@@ -813,54 +827,89 @@ void Solid::drawEdges()
 //		}
 //
 //	}
-	for(vit=listOfVertices.begin(); vit!=listOfVertices.end(); vit++)
+//	for(vit=listOfVertices.begin(); vit!=listOfVertices.end(); vit++)
+	for(v4it=hull4d->getVertexList().begin(); v4it!=hull4d->getVertexList().end(); v4it++)
 	{
 		glPushMatrix();
 		glColor4f(0.0,1.0,0.0,1.0);
-		glTranslated(vit->getXCoord()/resolution, vit->getYCoord()/resolution, vit->getZCoord()/resolution);
+//		glTranslated(vit->getXCoord()/resolution, vit->getYCoord()/resolution, vit->getZCoord()/resolution);
+		double *vertices;
+		vertices = v4it->second.getCoords();
+		glTranslated(vertices[0]/resolution, vertices[1]/resolution, vertices[2]/resolution);
 		glutSolidSphere(0.05,10,10);
 		glPopMatrix();
 	}
-	for(int i=firstCell; i<lastCell; i++)
+//	cout<<"Number of faces:"<<hull4d->getRidgeList().size()<<endl;
+	for(rit = hull4d->getRidgeList().begin(); rit!=hull4d->getRidgeList().end(); rit++)
 	{
-		double *center;
+
+		double vertList[3][3];
+		int i=0;
+//		cout<<"viewing:"<<rit->second.getId()<<endl;
+		for(deque<long>::iterator ridgeVit= rit->second.getVertexList().begin(); ridgeVit!= rit->second.getVertexList().end(); i++,ridgeVit++ )
+		{
+//			cout<<"curr ridgeVit:"<<*ridgeVit<<endl;
+			for(int j=0; j<3; j++)
+			{
+				vertList[i][j]=hull4d->getVertexList().find(*ridgeVit)->second.getCoords()[j];
+			}
+		}
 		glColor4f(1.0,0.0,0.0,1.0);
-		for(eit=listOfCells[i].getEdges().begin(); eit!=listOfCells[i].getEdges().end(); eit++)
+//		cout<<"first vertex:"<<vertList[0][0]<<","<<vertList[0][1]<<","<<vertList[0][2]<<endl;
+//		cout<<"sec vertex:"<<vertList[1][0]<<","<<vertList[1][1]<<","<<vertList[1][2]<<endl;
+//		cout<<"third vertex:"<<vertList[2][0]<<","<<vertList[2][1]<<","<<vertList[2][2]<<endl;
+		glBegin(GL_LINES);
+		for(int i=0; i<3; i++)
 		{
-			glColor4f(1.0,0.0,0.0,1.0);
-			glBegin(GL_LINES);
-			glVertex3d((*eit)->getVertex()[0]->getXCoord()/resolution, (*eit)->getVertex()[0]->getYCoord()/resolution, (*eit)->getVertex()[0]->getZCoord()/resolution);
-			glVertex3d((*eit)->getVertex()[1]->getXCoord()/resolution, (*eit)->getVertex()[1]->getYCoord()/resolution, (*eit)->getVertex()[1]->getZCoord()/resolution);
-			glEnd();
+			for(int j=0; j<3; j++)
+			{
+				if(i==j)
+					continue;
+				glVertex3d(vertList[j][0]/resolution,vertList[j][1]/resolution,vertList[j][2]/resolution);
+			}
 		}
-		if(showCircle)
-		{
-			center=listOfCells[i].getCircumCenter();
-//			if(listOfCells[i].getVertexListSize()==4)
-//			{
-				glPushMatrix();
-				glTranslated(center[0]/resolution,center[1]/resolution,center[2]/resolution);
-				if(wire)
-					glutWireSphere(listOfCells[i].getCircumRadius()/resolution,40,40);
-				else
-					glutSolidSphere(listOfCells[i].getCircumRadius()/resolution,40,40);
-				glPopMatrix();
-//			}
-//			else
-//			{
-//				glPushMatrix();
-//				glBegin(GL_LINE_LOOP);
-//				glTranslated(center[0]/resolution,center[1]/resolution,center[2]/resolution);
-//				for (int ic=0; ic < 360; ic++)
-//				{
-//					double degInRad = ic*(3.14159/180);
-//					glVertex3d(cos(degInRad)*(listOfCells[i].getCircumRadius()/resolution),center[1],sin(degInRad)*(listOfCells[i].getCircumRadius()/resolution));
-//				}
-//				glEnd();
-//				glPopMatrix();
-//			}
-		}
+		glEnd();
 	}
+//	for(int i=firstCell; i<lastCell; i++)
+//	{
+//		double *center;
+//		glColor4f(1.0,0.0,0.0,1.0);
+//		for(eit=listOfCells[i].getEdges().begin(); eit!=listOfCells[i].getEdges().end(); eit++)
+//		{
+//			glColor4f(1.0,0.0,0.0,1.0);
+//			glBegin(GL_LINES);
+//			glVertex3d((*eit)->getVertex()[0]->getXCoord()/resolution, (*eit)->getVertex()[0]->getYCoord()/resolution, (*eit)->getVertex()[0]->getZCoord()/resolution);
+//			glVertex3d((*eit)->getVertex()[1]->getXCoord()/resolution, (*eit)->getVertex()[1]->getYCoord()/resolution, (*eit)->getVertex()[1]->getZCoord()/resolution);
+//			glEnd();
+//		}
+//		if(showCircle)
+//		{
+//			center=listOfCells[i].getCircumCenter();
+////			if(listOfCells[i].getVertexListSize()==4)
+////			{
+//				glPushMatrix();
+//				glTranslated(center[0]/resolution,center[1]/resolution,center[2]/resolution);
+//				if(wire)
+//					glutWireSphere(listOfCells[i].getCircumRadius()/resolution,40,40);
+//				else
+//					glutSolidSphere(listOfCells[i].getCircumRadius()/resolution,40,40);
+//				glPopMatrix();
+////			}
+////			else
+////			{
+////				glPushMatrix();
+////				glBegin(GL_LINE_LOOP);
+////				glTranslated(center[0]/resolution,center[1]/resolution,center[2]/resolution);
+////				for (int ic=0; ic < 360; ic++)
+////				{
+////					double degInRad = ic*(3.14159/180);
+////					glVertex3d(cos(degInRad)*(listOfCells[i].getCircumRadius()/resolution),center[1],sin(degInRad)*(listOfCells[i].getCircumRadius()/resolution));
+////				}
+////				glEnd();
+////				glPopMatrix();
+////			}
+//		}
+//	}
 }
 
 int Solid::listOfCellsSize()

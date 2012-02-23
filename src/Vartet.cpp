@@ -235,7 +235,7 @@ int main (int argc, char** argv)
 	exactinit();
 	model.delaunize();
 //TODO below line is not req.. its present for debugging..
-	srand(time(0));
+	srand(time(0)+6);
 //TODO delete code above
 	glutInit(&argc,argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);

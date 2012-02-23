@@ -62,6 +62,7 @@ void Solid::dewall(map<string,deque<Face>::pointer>& activeFaceList, kdtree *kdT
 	{
 		kdTree->searchNodes(candidateVertices,kdTree->getRoot(),searchBoxFirstSimplex);
 		cout<<"size to look for:"<<candidateVertices.size()<<endl;
+		cout<<"Number of edges"<<listOfEdges.size()<<endl;
 		if(candidateVertices.size())
 		{
 			sort(candidateVertices.begin(), candidateVertices.end(),sorter(alphaPlane, axisToUse));
@@ -93,6 +94,7 @@ void Solid::dewall(map<string,deque<Face>::pointer>& activeFaceList, kdtree *kdT
 				}
 				else
 				{
+					cout<<"Number of edges"<<listOfEdges.size()<<endl;
 					listOfCells.pop_back();
 					listOfFaces.pop_back();
 				}
@@ -111,6 +113,7 @@ void Solid::dewall(map<string,deque<Face>::pointer>& activeFaceList, kdtree *kdT
 //			searchBoxFirstSimplex[1][axisToUse] += abs(kdTree->getRoot()->getRightChild()->getLowRegion()[axisToUse]);
 		}
 	}
+	cout<<"Number of edges"<<listOfEdges.size()<<endl;
 	if(activeFaceList.size())
 	{
 		map<string,deque<Face>::pointer>::iterator afiter;
