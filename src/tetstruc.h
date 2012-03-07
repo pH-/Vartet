@@ -15,62 +15,36 @@ class Solid;
 class Cell;
 class kdtree;
 
-class Coordinates	{
+class Vertex : public BaseVertex
+{
 public:
-	Coordinates(double, double, double);
-	void setCoords(double, double, double);
-	double* getCoords();
-	double getXCoord();
-	double getYCoord();
-	double getZCoord();
-private:
-	double coords[3];
-};
-
-class Vertex {
-public:
-	Vertex(double, double, double,bool);
-	Vertex():vertexCoord(NULL),boundaryMarker(false),numOfOpenFaces(-1),oppositeFace(NULL){};
+	Vertex(double, double, double);
 	double getXCoord();
 	double getYCoord();
 	double getZCoord();
 	double getCoord(axisToSort);
 	double getSqDistance(Vertex&);
 	double getSqDistance(double[3]);
-	bool   sameAs(Vertex&);
-//	void   setOppFace(deque<Face>::pointer);
-	void   incrNumOfOpenFaces();
-	void   decrNumOfOpenFaces();
-	int    getNumOfOpenFaces();
-	void   setId(int id);
-	int    getId();
 	void	*sparePtr;						// a pointer to be used for temporary extension of a vertex object.
 private:
-	Coordinates *vertexCoord;
-	bool		boundaryMarker;
-	int			numOfOpenFaces;
 	deque<Face>::pointer oppositeFace;
-	int         id;
 };
 
 class Hole {
 public:
 	Hole(double,double,double);
 private:
-	Coordinates *holeCoords;
+	double holeCoords[3];
 };
 
 class Edge {
 public:
-	Edge(deque<Vertex>::pointer, deque<Vertex>::pointer);
+	Edge(long,long);
 	Edge(){};
-	void setVertices(deque<Vertex>::pointer, deque<Vertex>::pointer);
-	Vertex** getVertex();
-	bool testCircumCircle(deque<Vertex>::pointer, double[4]);
-	double testCircumCircleAdaptive(Vertex&, Vertex&);
-	bool check2DOrientationAdaptive(Vertex&);
+	void insertVertex(long);
+	deque<long>& getVertices();
 private:
-	vector<Vertex>::pointer vertices[2];
+	deque<long> vertices;
 };
 
 class PlcEdge {
@@ -81,37 +55,19 @@ private:
 	Vertex		*vertices[2];
 };
 
-class Face	{
+class Face : public Base2dSimplex
+{
 public:
 	Face();
-	void setId(string);
-	string getId();
-	void addVertices(deque<Vertex>::pointer, deque<Vertex>::pointer, deque<Vertex>::pointer);
-	void addEdges(deque<Edge>::pointer, deque<Edge>::pointer, deque<Edge>::pointer);
-	void addOppositeVertex(deque<Vertex>::pointer);
+	Face(Base2dSimplex*);
+	Face(Face* obj);
+	double* getNormal();
+	deque<long>& getEdges();
+
+	void addEdges(long,long, long);
 	void addNormalDir(double[3]);
-	bool testCircumSphere(Vertex&,double[4]);
-	double testCircumSphereAdaptive(Vertex&,Vertex&);
-	deque<Vertex>::pointer* getVertices();
-	deque<Edge>::pointer* getEdges();
-	bool setNeighbourCell(deque<Cell>::pointer);
-	void setNeighCell1(deque<Cell>::pointer);
-	void setNeighCell2(deque<Cell>::pointer);
-	Cell* getNeighCell1();
-	Cell* getNeighCell2();
-	void incrNumOfOpenFaces();
-	void decrNumOfOpenFaces();
-	int getNumOfOpenFaces();
-	deque<Vertex>::pointer getOppositeVertex1();
-	deque<Vertex>::pointer getOppositeVertex2();
 private:
-	deque<Vertex>::pointer	vertices[3];
-	deque<Edge>::pointer	edges[3];
-	deque<Vertex>::pointer	oppositeVertex1;
-	deque<Vertex>::pointer  oppositeVertex2;
-	deque<Cell>::pointer    cell1;
-	deque<Cell>::pointer    cell2;
-	string					id;
+	deque<long> 	edges;
 	double      normDir[3];
 };
 
@@ -136,71 +92,47 @@ private:
 	Hole		**VolumeHoleList;
 };
 
-class Cell	{
+class Cell : public Base3dSimplex
+{
 public:
 	Cell();
-	Cell(int);
-	void setId(string);
-	string getId();
-	void addVertex(deque<Vertex>::pointer);
-	bool addFace(deque<Face>::pointer);
-	//void addNeighbour(deque<Cell>::pointer, deque<Face>::pointer);
-	void addEdge(deque<Edge>::pointer);
-	size_t getVertexListSize();
-	size_t getFaceListSize();
-	size_t getNeighListSize();
-	size_t getEdgeListSize();
-	deque<deque<Vertex>::pointer>& getVertices();
-	deque<deque<Edge>::pointer>& getEdges();
-	deque<deque<Face>::pointer>& getFaces();
-	//multimap<deque<Cell>::pointer, deque<Face>::pointer>& getNeighbours();
-	bool testCircumCircle(deque<Vertex>::pointer,double[4]);
-	double testCircumCircleAdaptive(Vertex& v1, Vertex& v2);
-	trippleBool testCircumSphere(Vertex&,double[4]);
-	double testCircumSphereAdaptive(Vertex&,Vertex&);
-	void addFEVs(deque<Face>::pointer);
-	void delFEVs(deque<Face>::pointer);
-	bool checkOrientation(Vertex&);
-	bool check3DOrientationAdaptive(Vertex&);
-	bool check2DOrientationAdaptive(Vertex&);
-	void setCircumCenter(double[3]);
-	void setCircumRadius(double);
-	double getCircumRadius();
-	double* getCircumCenter();
-	void delVertices();
+	Cell(Base3dSimplex*);
+	Cell(Cell* obj);
+
+	void 		 addEdge(long);
+	deque<long>& getEdges();
+	double 		 getCircumRadius();
+	double* 	 getCircumCenter();
+	int          getFaceNormalDirectionSign(long);
+
+	void 		 setCircumCenter(double[3]);
+	void 		 setCircumRadius(double);
+	void 		 setDihedralAngles(Face*, Face*, Face*, Face*);
+	void 		 setFaceNormalDirectionSign(long,int);
+
 private:
-	string 						  id;
-	deque<deque<Vertex>::pointer> vertices;
-	deque<deque<Edge>::pointer>   edges;
-	deque<deque<Face>::pointer>   faces;
-	double						  circumCtr[3];
-	double						  circumRadius;
-	//multimap<deque<Cell>::pointer, deque<Face>::pointer> neighbours;
+	deque<long>   		edges;
+	double				circumCtr[3];
+	double				circumRadius;
+	map<string,double> 	dihedralAngles;
+	map<long,int> 		faceNormalDirectionSign;
 };
 
 class Solid	{
 public:
-	void populateVertices(deque<Vertex>&);
+//	void populateVertices(deque<Vertex>&);
 	void populateVerticesRandom();
-	void delaunize();
-	//void sortVertices(axisToSort, deque<Vertex>, deque<Vertex>);
-	//void dewall(axisToSort,deque<Vertex>&,map<string,deque<Face>::pointer>&, deque<deque<deque<deque<deque<Vertex>::pointer > > > >&);
-	void dewall(map<string,deque<Face>::pointer>&, kdtree*, kdtree*);
-	void *sparePtr;                                          // a pointer to be used for temporary extension of a Solid object.
-	bool makeCell(deque<Cell>::reference, kdtree*, kdtree*, double);
+	void delaunize(qhull::convexHull4d*);
+	void createSolid(qhull::convexHull4d*);
 	void drawEdges();
 	int  listOfCellsSize();
-protected:
-	void confirmWinnerVertex(deque<Cell>::reference, Vertex*&,deque<deque<deque<deque<deque<Vertex>::pointer > > > >&);
-	deque<Cell> listOfCells;
-	deque<Face>	listOfFaces;
-	deque<Edge>	listOfEdges;
-	map<string,deque<Face>::pointer> faceMap;
-	deque<Vertex>	listOfVertices;
-	deque<Vertex>	verticesXsort;
-	deque<Vertex>	verticesYsort;
-	deque<Vertex>	verticesZsort;
-	qhull::convexHull4d *hull4d;
+private:
+	bool 			 testNormalDir(Face*,Vertex*);
+	map<long,Vertex> listOfVertices;
+	map<long,Edge> 	 listOfEdges;
+	map<long,Face>   listOfFaces;
+	map<long,Cell>   listOfCells;
+
 };
 
 class Plc {

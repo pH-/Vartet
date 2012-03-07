@@ -47,6 +47,9 @@ enum axisToSort { X, Y, Z};
 enum trippleBool{ false_val, true_val, midstate_val};
 #define STEPSIZE 0.1
 
+#include "Base3dSimplex.h"
+#include "Base2dSimplex.h"
+#include "BaseVertex.h"
 #include "tetstruc.h"
 #include "quickhull.h"
 #include "kdtree.h"

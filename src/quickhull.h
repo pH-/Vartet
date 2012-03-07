@@ -7,80 +7,54 @@
 
 #ifndef QUICKHULL_H_
 #define QUICKHULL_H_
-using namespace std;
+//using namespace std;
 
 namespace qhull {
 class facet;
 class ridge;
 
-class vertex4d
+class vertex4d : public BaseVertex
 {
 public:
 	vertex4d(double, double, double, double);
-	double* getCoords();
 	bool isAbove(facet*);
 	void setAssignedToBucket(bool);
 	bool getBucketAssignmentStatus();
 	deque<long>& getVisibleFacets();
-	long getId();
 	void insertVisibleFacet(long);
-	void setVertexId(long);
 private:
-	double coords4d[4];
 	deque<long> visibleFacets;
 	bool bucketStatus;
-	long vertexId;
 };
-class ridge
+class ridge : public Base2dSimplex
 {
 public:
 	ridge();
-	long getNeighbour1();
-	long getNeighbour2();
-	deque<long>& getVertexList();
-	long getId();
-	void insertVertex(long);
-	void setNeighbour1(long);
-	void setNeighbour2(long);
-	void setId(long);
-private:
-	deque<long> ridgeVertices;
-	long neighFacet1, neighFacet2;
-	long ridgeId;
 };
-class facet
+class facet : public Base3dSimplex
 {
 public:
 	facet();
 	double* getNormal();
 	double 	getOffset();
 	deque<long>& getBucketVertices();
-	deque<long>& getFacetRidges();
-	deque<long>& getVertexIndices();
-	long 	getId();
 	long	getFurthestPoint();
 	void 	setNormal(double[4]);
 	void	putInBucket(long);
-	void	insertRidge(long);
 	void 	calcNormOffset(const deque<vertex4d>::pointer*, double* );
-	void	setRidges(long[4]);
-	void 	setId(long);
 	void	setFurthestPoint(long);
 
 private:
 	double normal[4];
 	double offset;
 	long furthestPoint;
-	long id;
-	deque<long> vertexIndices;
-	deque<long> facetRidges;
 	deque<long> bucket;
 };
 
 class convexHull4d
 {
 public:
-	convexHull4d(){idCounter=0;}
+	static convexHull4d* createHullObject();
 	map<long, vertex4d>& getVertexList();
 	map<long, ridge>& getRidgeList();
 	map<long, facet>& getFacetList();
@@ -89,9 +63,11 @@ public:
 	void initBucketing();
 	void insertFacet(facet);
 	void insertVertex(vertex4d);
-	void populateVerticesList(deque<Vertex>);
+	void populateVerticesList(map<long,Vertex>);
 	void insertTempFacet(long,facet);
 private:
+	convexHull4d(){}
+	~convexHull4d();
 	void finalCleaning();
 	void setFurthestPoint(long);
 	void setVisibleFacetsForVertex(long);
@@ -106,7 +82,8 @@ private:
 	map<long,facet> tempFacets;
 	map<long,ridge> tempRidges;
 	map<string,long> idMap;
-	long idCounter;
+	static long idCounter;
+	static bool objCreated;
 };
 }
 #endif /* QUICKHULL_H_ */

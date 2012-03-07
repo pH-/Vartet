@@ -8,11 +8,11 @@
 
 #include "includes.h"
 using namespace std;
-extern int firstCell;
-extern int lastCell;
-extern int faceToShow;
-extern bool showCircle;
-extern bool wire;
+//extern int firstCell;
+//extern int lastCell;
+//extern int faceToShow;
+//extern bool showCircle;
+//extern bool wire;
 
 Solid model;
 double camMotionStep=0.5;
@@ -26,7 +26,7 @@ void init(void)
 	glEnable(GL_DEPTH_TEST);							// Enables Depth Testing
 	glDepthFunc(GL_LEQUAL);								// The Type Of Depth Testing To Do
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);	// Really Nice Perspective Calculations
-	lastCell=model.listOfCellsSize();
+//	lastCell=model.listOfCellsSize();
 
 }
 
@@ -144,46 +144,46 @@ void keyboard(unsigned char key, int x, int y)
 			lookatz+=camMotionStep;
 			glutPostRedisplay();
 			break;
-		case '0':
-			firstCell=0;
-			lastCell=model.listOfCellsSize();
-			glutPostRedisplay();
-			break;
-		case '1':
-			if(firstCell<model.listOfCellsSize()-1)
-				firstCell++;
-			else
-				firstCell=0;
-			lastCell=firstCell+1;
-			glutPostRedisplay();
-			break;
-		case '2':
-			firstCell=0;
-			if(lastCell<firstCell)
-				lastCell=firstCell;
-			else if(lastCell<model.listOfCellsSize())
-				lastCell++;
-			else
-				lastCell=firstCell;
-			glutPostRedisplay();
-			break;
-		case '3':
-			faceToShow=(faceToShow+1)%54;
-			glutPostRedisplay();
-			break;
-		case '4':
-			if(firstCell>0)
-				firstCell--;
-			glutPostRedisplay();
-			break;
-		case 'c':
-			showCircle=!showCircle;
-			glutPostRedisplay();
-			break;
-		case 's':
-			wire=!wire;
-			glutPostRedisplay();
-			break;
+//		case '0':
+//			firstCell=0;
+//			lastCell=model.listOfCellsSize();
+//			glutPostRedisplay();
+//			break;
+//		case '1':
+//			if(firstCell<model.listOfCellsSize()-1)
+//				firstCell++;
+//			else
+//				firstCell=0;
+//			lastCell=firstCell+1;
+//			glutPostRedisplay();
+//			break;
+//		case '2':
+//			firstCell=0;
+//			if(lastCell<firstCell)
+//				lastCell=firstCell;
+//			else if(lastCell<model.listOfCellsSize())
+//				lastCell++;
+//			else
+//				lastCell=firstCell;
+//			glutPostRedisplay();
+//			break;
+//		case '3':
+//			faceToShow=(faceToShow+1)%54;
+//			glutPostRedisplay();
+//			break;
+//		case '4':
+//			if(firstCell>0)
+//				firstCell--;
+//			glutPostRedisplay();
+//			break;
+//		case 'c':
+//			showCircle=!showCircle;
+//			glutPostRedisplay();
+//			break;
+//		case 's':
+//			wire=!wire;
+//			glutPostRedisplay();
+//			break;
 //		case 'd':
 //		case 'D':
 //			model.delaunize();
@@ -228,12 +228,18 @@ void keyboard(unsigned char key, int x, int y)
 int main (int argc, char** argv)
 {
 	Plc inputModel;
-	cout<<argv[1];
-	inputModel.parsePolyFile(argv[1]);
+	qhull::convexHull4d *hull4d = qhull::convexHull4d::createHullObject();
+	if(!hull4d)
+	{
+		cout<<"Error creating hull";
+		exit(0);
+	}
+	//cout<<argv[1];
+//	inputModel.parsePolyFile(argv[1]);
 //	model.populateVertices(inputModel.getPlcVertices());
 	model.populateVerticesRandom();
 	exactinit();
-	model.delaunize();
+	model.delaunize(hull4d);
 //TODO below line is not req.. its present for debugging..
 	srand(time(0)+6);
 //TODO delete code above

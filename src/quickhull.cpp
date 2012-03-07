@@ -10,6 +10,8 @@ using namespace qhull;
 
 
 //vertex functions
+bool convexHull4d::objCreated = false;
+long convexHull4d::idCounter = 0;
 void convexHull4d::printMap()
 {
 	map<long,facet>::iterator mit;
@@ -39,7 +41,7 @@ void convexHull4d::printMap()
 		}
 		cout<<"\t Ridge ids: ";
 #endif
-		for(deque<long>::iterator rit = mit->second.getFacetRidges().begin(); rit!=mit->second.getFacetRidges().end(); rit++)
+		for(deque<long>::iterator rit = mit->second.getContaining2dSimplices().begin(); rit!=mit->second.getContaining2dSimplices().end(); rit++)
 		{
 #ifdef Print
 			cout<<*rit<<",";
@@ -65,15 +67,11 @@ void convexHull4d::printMap()
 }
 vertex4d::vertex4d(double x, double y, double z, double w)
 {
-	coords4d[0]=x;
-	coords4d[1]=y;
-	coords4d[2]=z;
-	coords4d[3]=w;
+	coords[0]=x;
+	coords[1]=y;
+	coords[2]=z;
+	coords[3]=w;
 	bucketStatus = false;
-}
-double* vertex4d::getCoords()
-{
-	return coords4d;
 }
 
 bool vertex4d::isAbove(facet* f)
@@ -93,70 +91,28 @@ deque<long>& vertex4d::getVisibleFacets()
 {
 	return visibleFacets;
 }
-long vertex4d::getId()
-{
-	return vertexId;
-}
+
 void vertex4d::insertVisibleFacet(long f)
 {
 	if(find(visibleFacets.begin(), visibleFacets.end(), f)==visibleFacets.end())
 		visibleFacets.push_back(f);
 }
-void vertex4d::setVertexId(long id)
-{
-	vertexId = id;
-}
+
 
 //ridge functions
 ridge::ridge()
 {
-	neighFacet1=0l;
-	neighFacet2=0l;
-	ridgeId=0l;
-}
-long ridge::getNeighbour1()
-{
-	return neighFacet1;
+	neigh3dSimplex1=0l;
+	neigh3dSimplex2=0l;
+	iD=0l;
 }
 
-long ridge::getNeighbour2()
-{
-	return neighFacet2;
-}
-
-deque<long>& ridge::getVertexList()
-{
-	return ridgeVertices;
-}
-long ridge::getId()
-{
-	return ridgeId;
-}
-void ridge::setNeighbour1(long f)
-{
-	neighFacet1 = f;
-}
-
-void ridge::setNeighbour2(long f)
-{
-	neighFacet2 = f;
-}
-
-void ridge::insertVertex(long v)
-{
-	ridgeVertices.push_back(v);
-}
-
-void ridge::setId(long id)
-{
-	ridgeId = id;
-}
 
 //facet functions
 facet::facet()
 {
 	furthestPoint=0;
-	id=0;
+	iD=0;
 	offset=0;
 }
 double* facet::getNormal()
@@ -174,18 +130,18 @@ deque<long >& facet::getBucketVertices()
 	return bucket;
 }
 
-deque<long>& facet::getFacetRidges()
-{
-	return facetRidges;
-}
-deque<long>& facet::getVertexIndices()
-{
-	return vertexIndices;
-}
-long facet::getId()
-{
-	return id;
-}
+//deque<long>& facet::getContaining2dSimplices()
+//{
+//	return contained2dSimplexIndices;
+//}
+//deque<long>& facet::getVertexIndices()
+//{
+//	return vertexIndices;
+//}
+//long facet::getId()
+//{
+//	return iD;
+//}
 long facet::getFurthestPoint()
 {
 	return furthestPoint;
@@ -201,10 +157,10 @@ void facet::putInBucket(long v)
 	bucket.push_back(v);
 }
 
-void facet::insertRidge(long r)
-{
-	facetRidges.push_back(r);
-}
+//void facet::insertRidge(long r)
+//{
+//	contained2dSimplexIndices.push_back(r);
+//}
 
 void facet::calcNormOffset(const deque<vertex4d>::pointer v[4], double* testVertex)
 {
@@ -254,10 +210,10 @@ void facet::calcNormOffset(const deque<vertex4d>::pointer v[4], double* testVert
 }
 
 
-void facet::setId(long idValue)
-{
-	id=idValue;
-}
+//void facet::setId(long idValue)
+//{
+//	id=idValue;
+//}
 
 void facet::setFurthestPoint(long v)
 {
@@ -265,6 +221,18 @@ void facet::setFurthestPoint(long v)
 }
 
 //convexHull functions
+
+convexHull4d* convexHull4d::createHullObject()
+{
+	if(!convexHull4d::objCreated)
+	{
+		objCreated = true;
+		convexHull4d::idCounter=0;
+		return new convexHull4d();
+	}
+	else
+		return NULL;
+}
 
 map<long,facet>& convexHull4d::getFacetList()
 {
@@ -286,13 +254,19 @@ void convexHull4d::insertVertex(vertex4d v)
 	verticesOfHull.insert(pair<long,vertex4d>(v.getId(),v));
 }
 
-void convexHull4d::populateVerticesList(deque<Vertex> origList)
+void convexHull4d::populateVerticesList(map<long,Vertex> origList)
 {
-	for(unsigned int i=0; i<origList.size(); i++)
+	for(map<long,Vertex>::iterator it = origList.begin(); it!= origList.end(); it++)
 	{
-		double coordDim4 = pow(origList[i].getXCoord(),2) + pow(origList[i].getYCoord(),2) + pow(origList[i].getZCoord(),2);
-		vertex4d *newVertex = new vertex4d(origList[i].getXCoord(), origList[i].getYCoord(), origList[i].getZCoord(), coordDim4);
-		newVertex->setVertexId(i);
+		double coordDim4 = pow(it->second.getCoords()[0],2)
+				         + pow(it->second.getCoords()[1],2)
+				         + pow(it->second.getCoords()[2],2);
+
+		vertex4d *newVertex = new vertex4d(it->second.getCoords()[0],
+										   it->second.getCoords()[1],
+										   it->second.getCoords()[2],
+				     	 	 	 	 	   coordDim4);
+		newVertex->setVertexId(it->first);
 		insertVertex(*newVertex);
 	}
 }
@@ -402,8 +376,8 @@ void convexHull4d::makeInitSimplex()
 		}
 		sort(vertexIds.begin(), vertexIds.end());
 		newRidge->setId(generateId(&vertexIds));
-		tempFacets.find(newRidge->getNeighbour1())->second.insertRidge(newRidge->getId());
-		tempFacets.find(newRidge->getNeighbour2())->second.insertRidge(newRidge->getId());
+		tempFacets.find(newRidge->getNeighbour1())->second.insertContaining2dSimplex(newRidge->getId());
+		tempFacets.find(newRidge->getNeighbour2())->second.insertContaining2dSimplex(newRidge->getId());
 		tempRidges.insert(pair<long,ridge>(newRidge->getId(),*newRidge));
 	}
 }
@@ -531,12 +505,12 @@ void convexHull4d::createNewFacets(deque<long>& horizonRidges, vertex4d* furthes
 		if(tempRidges.find((*hrit))->second.getNeighbour1())
 		{
 			tempRidges.find((*hrit))->second.setNeighbour2(newFacet->getId());
-			newFacet->insertRidge(*hrit);
+			newFacet->insertContaining2dSimplex(*hrit);
 		}
 		else
 		{
 			tempRidges.find((*hrit))->second.setNeighbour1(newFacet->getId());
-			newFacet->insertRidge(*hrit);
+			newFacet->insertContaining2dSimplex(*hrit);
 		}
 		for(int i=0; i<3; i++)
 		{
@@ -575,7 +549,7 @@ void convexHull4d::createNewFacets(deque<long>& horizonRidges, vertex4d* furthes
 				newRidge->setNeighbour1(newFacet->getId());
 			else
 				newRidge->setNeighbour2(newFacet->getId());
-			newFacet->insertRidge(newRidge->getId());
+			newFacet->insertContaining2dSimplex(newRidge->getId());
 		}
 		deque<vertex4d>::pointer v[4];
 		v[0]= &(verticesOfHull.find(furthest->getId())->second);
@@ -620,7 +594,7 @@ void convexHull4d::deleteDiscardedFacets(deque<long>& discardedFacets, vertex4d*
 				verticesOfHull.find(*buckIt)->second.getVisibleFacets().clear();
 			}
 		}
-		for(rit = tempFacets.find((*fit))->second.getFacetRidges().begin(); rit!=tempFacets.find((*fit))->second.getFacetRidges().end(); rit++)
+		for(rit = tempFacets.find((*fit))->second.getContaining2dSimplices().begin(); rit!=tempFacets.find((*fit))->second.getContaining2dSimplices().end(); rit++)
 		{
 			if(find(horizonRidges.begin(), horizonRidges.end(), (*rit))==horizonRidges.end() && tempRidges.find(*rit)!=tempRidges.end())
 			{
@@ -643,7 +617,7 @@ void convexHull4d::getHorizonRidges(deque<long>& horizonRidges, vertex4d* furthe
 	for(deque<long>::iterator fit = furthest->getVisibleFacets().begin(); fit!=furthest->getVisibleFacets().end(); fit++)
 	{
 		deque<long>::iterator rit;
-		for(rit = tempFacets.find((*fit))->second.getFacetRidges().begin() ; rit!=tempFacets.find((*fit))->second.getFacetRidges().end(); rit++)
+		for(rit = tempFacets.find((*fit))->second.getContaining2dSimplices().begin() ; rit!=tempFacets.find((*fit))->second.getContaining2dSimplices().end(); rit++)
 		{
 			bool isFirstNeighbour = tempRidges.find((*rit))->second.getNeighbour1()==(*fit);
 			long neigh;
@@ -668,7 +642,7 @@ void convexHull4d::setVisibleFacetsForVertex(long vertexId)
 	for(deque<long>::iterator fit = verticesOfHull.find(vertexId)->second.getVisibleFacets().begin(); fit!=verticesOfHull.find(vertexId)->second.getVisibleFacets().end(); fit++)
 	{
 		deque<long>::iterator rit;
-		for(rit = tempFacets.find((*fit))->second.getFacetRidges().begin() ; rit!=tempFacets.find((*fit))->second.getFacetRidges().end(); rit++)
+		for(rit = tempFacets.find((*fit))->second.getContaining2dSimplices().begin() ; rit!=tempFacets.find((*fit))->second.getContaining2dSimplices().end(); rit++)
 		{
 			long neigh = tempRidges.find((*rit))->second.getNeighbour1()==(*fit)?tempRidges.find((*rit))->second.getNeighbour2():tempRidges.find((*rit))->second.getNeighbour1();
 			if(verticesOfHull.find(vertexId)->second.isAbove(&tempFacets.find(neigh)->second) &&
@@ -717,7 +691,7 @@ void convexHull4d::finalCleaning()
 		{
 			verticesOfHull.find(*buckIt)->second.setAssignedToBucket(false);
 		}
-		for(rit = tempFacets.find((*fit))->second.getFacetRidges().begin(); rit!=tempFacets.find((*fit))->second.getFacetRidges().end(); rit++)
+		for(rit = tempFacets.find((*fit))->second.getContaining2dSimplices().begin(); rit!=tempFacets.find((*fit))->second.getContaining2dSimplices().end(); rit++)
 		{
 			if(tempRidges.find(*rit)==tempRidges.end())
 				continue;
